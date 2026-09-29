@@ -687,8 +687,14 @@ Her ekranda **boş**, **yükleniyor** ve **hata** durumları o özellik yapılı
 
 > Bu bölümü her faz sonunda güncelle.
 
-- Aktif faz: **Faz 1**
-- Tamamlanan adımlar: 1 (klasör yapısı, git init, .gitignore — GitHub repo sona bırakıldı)
+- Aktif faz: **Kullanıcı kurulumları bekleniyor** (kod tarafı Faz 1–5 tamam, Faz 6 hazırlığı yapıldı)
+- Tamamlanan adımlar: 1–5, 7–14, 16–26 kod olarak tamam. Doğrulanan: `npm run build`, `npm run lint` (0 uyarı),
+  Vitest 19/19, backend `/health` + sahte `/predict` + 400/413 hataları + CORS curl ile test edildi.
+- Supabase kodu (auth, CRUD, storage) yazıldı ama gerçek projeyle henüz denenmedi (anahtar yok).
+- Kullanıcıya bağlı (en sona bırakıldı): Supabase projesi + schema.sql + .env anahtarları (15, 17, 18),
+  P1 model dosyaları (27–29), Netlify / HF Spaces / GitHub (6, 30–31).
+- `color_analysis.py` geçici sürüm; P1 OpenCV modülü gelince değiştirilecek.
+- 2026-09-29: Kullanıcı projeyi adım adım onay beklemeden bitirmemi istedi (öğretmen modu yerine).
 - P1 modeli: hazır değil (mock mode ile ilerleniyor)
 - Alınan kararlar:
   - 2026-09-29: Kural motorları (washingRules, compatibilityRules) frontend'de. Backend sadece AI çıktısı döner.
