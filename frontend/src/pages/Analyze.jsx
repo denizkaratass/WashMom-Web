@@ -18,7 +18,9 @@ export default function Analyze() {
   const [file, setFile] = useState(null)
 
   // Ücretsiz hosting'de backend uyuyor olabilir; sayfa açılınca arka planda uyandır.
-  useEffect(() => wakeBackend(), [])
+  useEffect(() => {
+    wakeBackend()
+  }, [])
 
   async function handleSubmit() {
     const ok = await analyze(file)

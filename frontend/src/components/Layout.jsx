@@ -7,7 +7,11 @@ export default function Layout() {
   const { pathname } = useLocation()
 
   // Sayfa değişince en üste kaydır
-  useEffect(() => window.scrollTo(0, 0), [pathname])
+  // Süslü parantez önemli: yeni tarayıcılarda scrollTo bir Promise döndürür; effect'ten
+  // fonksiyon dışında bir şey dönerse React onu "temizlik fonksiyonu" sanıp çöker.
+  useEffect(() => {
+    window.scrollTo(0, 0)
+  }, [pathname])
 
   return (
     <div className="flex min-h-dvh flex-col">
