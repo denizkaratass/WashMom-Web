@@ -1,0 +1,92 @@
+@import 'tailwindcss';
+
+/* WashMom tasarım token'ları — Tailwind v4 bunlardan bg-cream, text-ink, border-sand gibi sınıflar üretir */
+@theme {
+  --font-sans: 'Nunito', ui-sans-serif, system-ui, sans-serif;
+
+  --color-cream: #fbf7f0;
+  --color-cream-dark: #f3ecdf;
+  --color-sand: #e6dccb;
+
+  --color-leaf: #2f7d5b;
+  --color-leaf-dark: #23604a;
+  --color-leaf-light: #e2f0e7;
+
+  --color-coral: #e8705f;
+  --color-coral-dark: #c95545;
+  --color-coral-light: #fde9e4;
+
+  --color-honey: #b7791f;
+  --color-honey-light: #fcf1dc;
+
+  --color-ink: #2b2a28;
+  --color-ink-soft: #5f5a54;
+  --color-ink-faint: #8a847c;
+}
+
+@layer base {
+  html {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    @apply bg-cream font-sans text-ink antialiased;
+  }
+
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-leaf;
+  }
+
+  dialog::backdrop {
+    background: rgb(43 42 40 / 0.45);
+  }
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-full px-5 py-3 font-bold transition
+      disabled:cursor-not-allowed disabled:opacity-60;
+  }
+  .btn-primary {
+    @apply bg-leaf text-white shadow-sm hover:bg-leaf-dark;
+  }
+  .btn-secondary {
+    @apply border-2 border-sand bg-white text-ink hover:border-leaf hover:text-leaf;
+  }
+  .btn-danger {
+    @apply bg-coral-dark text-white hover:bg-coral;
+  }
+  .btn-ghost {
+    @apply px-3 py-2 text-ink-soft hover:bg-cream-dark hover:text-ink;
+  }
+
+  .card {
+    @apply rounded-3xl border border-sand bg-white p-5 shadow-sm sm:p-6;
+  }
+
+  .input {
+    @apply w-full rounded-2xl border-2 border-sand bg-white px-4 py-3 text-ink placeholder:text-ink-faint
+      focus:border-leaf focus:outline-none;
+  }
+
+  .label {
+    @apply mb-1.5 block text-sm font-bold text-ink-soft;
+  }
+
+  .chip {
+    @apply rounded-full border-2 border-sand bg-white px-3.5 py-1.5 text-sm font-semibold text-ink-soft transition
+      hover:border-leaf hover:text-leaf;
+  }
+  .chip-active {
+    @apply border-leaf bg-leaf text-white hover:text-white;
+  }
+
+  .page {
+    @apply mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 sm:py-12;
+  }
+}
+
+@keyframes scan {
+  0% { top: -33%; }
+  100% { top: 100%; }
+}
