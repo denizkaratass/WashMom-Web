@@ -42,6 +42,11 @@ export default function Analyze() {
         </div>
       </div>
 
+      <p className="mt-3 text-sm text-ink-faint">
+        🔒 Fotoğrafın sadece analiz için kullanılır, sunucuda saklanmaz. Gardırobuna kaydedersen yalnızca senin
+        görebileceğin şekilde saklanır.
+      </p>
+
       {status === 'error' && file && (
         <div role="alert" className="mt-4 flex flex-col gap-3 rounded-2xl bg-coral-light p-4 sm:flex-row sm:items-center sm:justify-between">
           <p className="font-semibold text-coral-dark">{error?.message ?? 'Bir şeyler ters gitti.'}</p>
