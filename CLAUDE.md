@@ -698,9 +698,15 @@ Her ekranda **boş**, **yükleniyor** ve **hata** durumları o özellik yapılı
   backend P1 pipeline'ını birebir uygular (Bölüm 6 tablosu). 3 altın fotoğrafta P1 ile fark 0.0000, HTTP üzerinden
   ve 1024 px frontend küçültmesiyle de aynı sınıf (güven farkı ≤ 0.002). Tahmin ~3–6 sn (GrabCut).
   Eşik 0.55 (fark kuralı ve 'other' tetikleyicisi kalktı). Yeni 422 "kıyafet bulunamadı".
-  Testler: backend unittest 32/32 (GoldenTests dahil), Vitest 50/50, lint 0, build OK.
+  Testler: backend unittest 33/33 (GoldenTests dahil), Vitest 50/50, lint 0, build OK.
   LICENSE (CC BY-NC 4.0) + NOTICE + footer atfı + analiz sayfasında gizlilik notu eklendi.
   `frontend/.env` → `VITE_USE_MOCK_API=false`. `backend/README.md` HF Space ayarlarını içerir.
+- 2026-10-08: Yayın öncesi tam kontrol. Bulunan hata: GrabCut OpenCV RNG durumunu taşıdığı için sonuç istek
+  sırasına bağlıydı → `prepare()` içinde `cv2.setRNGSeed(0)` (P1'in taze süreç durumu); golden.json her foto için
+  ayrı P1 süreciyle yeniden üretildi (kiyafet3: knitted 0.8493). Doğrulananlar: git geçmişinde secret yok;
+  npm audit + pip-audit 0 açık; Docker imajı (HF ile aynı Dockerfile) Linux'ta P1 ile birebir aynı sonuç, ~380 MB RAM,
+  root olmayan kullanıcı; 9 eşzamanlı istekte tutarlı sonuç; Supabase ayakta, anon RLS boş liste döner;
+  Playwright E2E 14/14 (masaüstü + iPhone 13: analiz, 422 mesajı, footer atfı, gizlilik notu, taşma yok, konsol hatası yok).
 - 2026-10-08: Teslim temizliği: Login/Register sarmalayıcıları kaldırıldı (route doğrudan AuthPage), kullanılmayan
   needs_review_by_rule alanı silindi, WashPassport "Özel bakım bakım" metin hatası düzeltildi, netlify.toml eklendi,
   README'ye ekran görüntüleri (docs/screenshots, mock mod) ve özellik listesi eklendi. Vitest 18/18.
