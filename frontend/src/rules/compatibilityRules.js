@@ -88,8 +88,8 @@ function confidenceCheck(a, b) {
 }
 
 /**
- * @param {object} a  garment: { name, fabric, color_group, washing_profile, needs_review, user_corrected }
- * @param {object} b
+ * @param {import('../interfaces/index.js').Garment} a
+ * @param {import('../interfaces/index.js').Garment} b  (kullanılan alanlar: name, fabric, color_group, washing_profile, needs_review, user_corrected)
  */
 export function checkCompatibility(a, b) {
   const checks = [colorCheck(a, b), careCheck(a, b), confidenceCheck(a, b)]

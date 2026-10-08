@@ -12,7 +12,10 @@ export const USE_MOCK_API = import.meta.env.VITE_USE_MOCK_API !== 'false'
 const API_URL = (import.meta.env.VITE_API_URL || 'http://localhost:8000').replace(/\/$/, '')
 const REQUEST_TIMEOUT_MS = 90_000 // ücretsiz hosting cold start uzun sürebilir
 
-/** @returns {Promise<{fabric, confidence, top_predictions, color_group, needs_review, model_version}>} */
+/**
+ * @param {File} file  Küçültülmüş kıyafet fotoğrafı
+ * @returns {Promise<import('../interfaces/index.js').AnalysisResult>}
+ */
 export async function analyzeGarment(file) {
   if (USE_MOCK_API) return mockAnalyzeGarment(file)
 

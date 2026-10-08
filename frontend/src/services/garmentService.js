@@ -9,6 +9,11 @@ import {
   uploadGarmentImage,
 } from './storageService.js'
 
+/** @typedef {import('../interfaces/index.js').Garment} Garment */
+/** @typedef {import('../interfaces/index.js').GarmentFormValues} GarmentFormValues */
+/** @typedef {import('../interfaces/index.js').GarmentChanges} GarmentChanges */
+/** @typedef {import('../interfaces/index.js').AnalysisResult} AnalysisResult */
+
 const TABLE = 'garments'
 
 async function requireUserId() {
@@ -19,8 +24,9 @@ async function requireUserId() {
 
 /**
  * Önce görsel yüklenir, sonra DB kaydı. DB kaydı başarısız olursa yüklenen görsel silinir.
- * @param {{ imageFile: File, analysis: object, values: object }} params
+ * @param {{ imageFile: File, analysis: AnalysisResult, values: GarmentFormValues }} params
  *   analysis: API'nin orijinal çıktısı; values: nihai alanlar (name, fabric, color_group, ...)
+ * @returns {Promise<Garment>}
  */
 export async function createGarment({ imageFile, analysis, values }) {
   const userId = await requireUserId()
@@ -50,7 +56,10 @@ export async function createGarment({ imageFile, analysis, values }) {
   return data
 }
 
-/** Kullanıcının tüm kıyafetleri (en yeni önce) + her biri için imageUrl. */
+/**
+ * Kullanıcının tüm kıyafetleri (en yeni önce) + her biri için imageUrl.
+ * @returns {Promise<Garment[]>}
+ */
 export async function listGarments() {
   const { data, error } = await supabase
     .from(TABLE)
@@ -65,7 +74,11 @@ export async function listGarments() {
   return data.map((g) => ({ ...g, imageUrl: urls[g.image_path] ?? null }))
 }
 
-/** Tek kıyafet; bulunamazsa null. */
+/**
+ * Tek kıyafet; bulunamazsa null.
+ * @param {string} id
+ * @returns {Promise<Garment | null>}
+ */
 export async function getGarment(id) {
   const { data, error } = await supabase.from(TABLE).select('*').eq('id', id).maybeSingle()
   if (error) {
@@ -77,7 +90,12 @@ export async function getGarment(id) {
   return { ...data, imageUrl }
 }
 
-/** Sadece izin verilen alanlar güncellenir. */
+/**
+ * Sadece izin verilen alanlar güncellenir.
+ * @param {string} id
+ * @param {GarmentChanges} changes
+ * @returns {Promise<Garment>}
+ */
 export async function updateGarment(id, changes) {
   const allowed = ['name', 'user_note', 'fabric', 'color_group', 'washing_profile', 'user_corrected']
   const patch = Object.fromEntries(Object.entries(changes).filter(([k]) => allowed.includes(k)))
@@ -86,7 +104,10 @@ export async function updateGarment(id, changes) {
   return data
 }
 
-/** Önce DB kaydı, sonra görsel. Görsel silinemezse loglanır, kullanıcı engellenmez. */
+/**
+ * Önce DB kaydı, sonra görsel. Görsel silinemezse loglanır, kullanıcı engellenmez.
+ * @param {Pick<Garment, 'id' | 'image_path'>} garment
+ */
 export async function deleteGarment(garment) {
   const { error } = await supabase.from(TABLE).delete().eq('id', garment.id)
   if (error) throw error
