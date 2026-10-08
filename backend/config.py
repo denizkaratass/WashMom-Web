@@ -19,6 +19,10 @@ ALLOWED_ORIGINS = [
 # ---- Yükleme sınırları ----
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB
 ACCEPTED_CONTENT_TYPES = {"image/jpeg", "image/png", "image/webp"}
+ACCEPTED_IMAGE_FORMATS = {"JPEG", "PNG", "WEBP"}  # Pillow'un dosya içeriğinden okuduğu gerçek biçim
+# Frontend görseli 1024 px'e küçültür; 25 MP (ör. 5000x5000) gerçek kullanım için fazlasıyla yeterli.
+# RGB'ye çevrilince ~75 MB RAM eder; daha büyükleri reddedilir (ücretsiz sunucular 512 MB RAM'le çalışabilir).
+MAX_IMAGE_PIXELS = 25_000_000
 
 # ---- Model (P1 / WashMom Vision) ----
 MODEL_PATH = BASE_DIR / "model" / "best_efficientnetv2b0.keras"

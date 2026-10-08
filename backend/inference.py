@@ -7,12 +7,14 @@
 import hashlib
 import json
 import logging
+from typing import get_args
 
 import numpy as np
 from PIL import Image
 
 import config
 from preprocessing import to_model_input
+from schemas import Fabric
 
 logger = logging.getLogger("washmom.inference")
 
@@ -37,10 +39,21 @@ class ModelService:
 
         # Sınıf sırası P1'deki eğitim sırasıyla aynı olmalı; asla elle tahmin etme.
         self.class_names = json.loads(config.CLASS_NAMES_PATH.read_text(encoding="utf-8"))
+        # API ve veritabanı sadece bu etiketleri kabul eder; P1 farklı isim kullandıysa her istek 500 olurdu.
+        unknown = set(self.class_names) - set(get_args(Fabric))
+        if unknown:
+            raise RuntimeError(f"class_names.json bilinmeyen etiket içeriyor: {sorted(unknown)}")
 
         import keras  # TensorFlow büyük; sadece gerçek model varken yüklenir
 
-        self.model = keras.models.load_model(config.MODEL_PATH)
+        model = keras.models.load_model(config.MODEL_PATH)
+        # Sınıf sayısı tutmazsa zip() sessizce keser ve model YANLIŞ etiket verir; baştan dur.
+        output_size = model.output_shape[-1]
+        if output_size != len(self.class_names):
+            raise RuntimeError(
+                f"Model {output_size} sınıf çıkarıyor ama class_names.json {len(self.class_names)} sınıf içeriyor"
+            )
+        self.model = model
         self.model_version = config.MODEL_VERSION
         logger.info("Model yüklendi: %s (%d sınıf)", config.MODEL_PATH.name, len(self.class_names))
 

@@ -7,8 +7,9 @@ Dokümantasyon:                    http://localhost:8000/docs
 import logging
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi import FastAPI, File, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 import config
 from color_analysis import classify_color
@@ -29,6 +30,19 @@ async def lifespan(_app: FastAPI):
 
 
 app = FastAPI(title="WashMom AI API", version="1.0.0", lifespan=lifespan)
+
+# multipart gövdesi endpoint'e gelmeden önce tamamen okunur. Content-Length baştan çok büyükse
+# gövdeyi hiç okumadan reddet. (CORS'tan ÖNCE eklenir → CORS en dışta kalır, 413 yanıtı da CORS başlığı alır.)
+MAX_REQUEST_BYTES = config.MAX_FILE_SIZE + 64 * 1024  # dosya + multipart başlıkları için pay
+
+
+@app.middleware("http")
+async def reject_oversized_requests(request: Request, call_next):
+    length = request.headers.get("content-length")
+    if request.url.path == "/predict" and length and length.isdigit() and int(length) > MAX_REQUEST_BYTES:
+        return JSONResponse(status_code=413, content={"detail": "Dosya çok büyük (en fazla 10 MB)."})
+    return await call_next(request)
+
 
 app.add_middleware(
     CORSMiddleware,
@@ -65,5 +79,6 @@ def predict(file: UploadFile = File(...)):
         logger.exception("Tahmin sırasında hata")
         raise HTTPException(status_code=500, detail="Model hatası.")
 
-    # Gizlilik: görsel diske yazılmaz, sadece bellekte işlenir.
+    # Gizlilik: görsel saklanmaz. (Starlette 1 MB'tan büyük yüklemeleri istek süresince geçici
+    # dosyada tutar ve istek bitince siler; frontend'in 1024 px JPEG'leri genelde bunun altındadır.)
     return {**prediction, "color_group": color_group, "model_version": model_service.model_version}

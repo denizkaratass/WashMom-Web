@@ -10,19 +10,33 @@ import io
 import numpy as np
 from PIL import Image, ImageOps, UnidentifiedImageError
 
-from config import IMAGE_SIZE
+from config import ACCEPTED_IMAGE_FORMATS, IMAGE_SIZE, MAX_IMAGE_PIXELS
 
 
 class InvalidImageError(ValueError):
-    """Görsel okunamadı / bozuk."""
+    """Görsel okunamadı / bozuk / izin verilmeyen türde."""
 
 
 def load_image(data: bytes) -> Image.Image:
     """Byte'ları Pillow görseline çevirir, EXIF yönünü düzeltir, RGB yapar."""
     try:
-        image = Image.open(io.BytesIO(data))
+        image = Image.open(io.BytesIO(data))  # sadece başlığı okur; pikseller henüz açılmadı
+    except (UnidentifiedImageError, OSError, Image.DecompressionBombError) as exc:
+        raise InvalidImageError("Görsel okunamadı") from exc
+
+    # Content-Type başlığı istemciden gelir, güvenilmez; gerçek dosya biçimine bak.
+    if image.format not in ACCEPTED_IMAGE_FORMATS:
+        raise InvalidImageError(f"Desteklenmeyen biçim: {image.format}")
+
+    # Küçük bir dosya devasa boyutlu bir görsel olabilir ("decompression bomb").
+    # Pikselleri açmadan önce boyutu kontrol et; yoksa yüzlerce MB RAM harcanır.
+    width, height = image.size
+    if width * height > MAX_IMAGE_PIXELS:
+        raise InvalidImageError(f"Görsel çok büyük: {width}x{height}")
+
+    try:
         image.load()
-    except (UnidentifiedImageError, OSError) as exc:
+    except (OSError, Image.DecompressionBombError) as exc:
         raise InvalidImageError("Görsel okunamadı") from exc
 
     image = ImageOps.exif_transpose(image)  # telefon fotoğrafları yan dönmesin

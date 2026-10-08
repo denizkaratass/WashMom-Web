@@ -1,8 +1,9 @@
-fastapi==0.115.6
+fastapi==0.142.4
+starlette==1.7.0          # fastapi altyapısı; güvenlik yamaları için açıkça sabitlendi
 uvicorn[standard]==0.34.0
-python-multipart==0.0.20
-python-dotenv==1.0.1
-pillow==11.1.0
+python-multipart==0.0.32
+python-dotenv==1.2.4
+pillow==12.3.0
 numpy==2.2.1
 opencv-python-headless==4.10.0.84
 
