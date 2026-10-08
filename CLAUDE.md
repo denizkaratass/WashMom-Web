@@ -701,7 +701,8 @@ Her ekranda **boş**, **yükleniyor** ve **hata** durumları o özellik yapılı
   starlette 1.7.0, python-multipart 0.0.32, pillow 12.3.0, python-dotenv 1.2.4); decompression bomb / dev görsel /
   sahte format / büyük gövde korumaları; model sınıf sayısı + etiket kontrolü; Modal sürükle-kapan hatası; WCAG AA
   kontrast; Netlify _headers; GitHub Actions CI. Testler: Vitest 49/49, backend unittest 26/26.
-  ⚠️ Supabase projesi duraklatılmış (DNS çözülmüyor) → dashboard'dan Restore edilmeli; Supabase'li E2E adımları bekliyor.
+  Supabase projesi duraklatılmıştı, kullanıcı Restore etti. E2E (production build + yerel FastAPI + Supabase) 20/20:
+  kayıt, kaydet, düzenle, gardırop, compare, dashboard, iki hesapla RLS + doğrudan REST/Storage saldırısı, silme.
 - 2026-09-29: Kullanıcı projeyi adım adım onay beklemeden bitirmemi istedi (öğretmen modu yerine).
 - P1 modeli: hazır değil (mock mode ile ilerleniyor)
 - Alınan kararlar:
