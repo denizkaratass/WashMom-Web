@@ -7,6 +7,7 @@ import SaveGarmentModal from '../components/SaveGarmentModal.jsx'
 import { useAnalysis } from '../context/AnalysisContext.jsx'
 import { useAuth } from '../context/AuthContext.jsx'
 import { FABRIC_LABELS, formatPercent, suggestGarmentName } from '../constants/labels.js'
+import { isDemoResult } from '../services/api.js'
 import { createGarment } from '../services/garmentService.js'
 
 function ReviewBox({ predictions, onPick, onDismiss }) {
@@ -72,6 +73,7 @@ export default function Result() {
         topPredictions={result.top_predictions}
         userCorrected={final.user_corrected}
         aiFabric={result.fabric}
+        demo={isDemoResult(result)}
         reviewBox={
           showReview && (
             <ReviewBox

@@ -139,8 +139,12 @@ describe('api.js gerçek mod', () => {
     [400, 'okuyamadım'],
     [413, 'fazla büyük'],
     [422, 'kıyafeti seçemedim'],
+    [429, 'dakika bekleyip'],
     [500, 'ters gitti'],
-    [503, 'ters gitti'], // bilinmeyen kodlar genel mesaja düşer
+    [502, 'yoğun'],
+    [503, 'yoğun'],
+    [504, 'çok uzun sürdü'],
+    [418, 'ters gitti'], // bilinmeyen kodlar genel mesaja düşer
   ])('%i → WashMom dilinde mesaj', async (status, text) => {
     respond(status, '{"detail":"x"}')
     await expect(analyzeGarment(new File(['x'], 'a.jpg'))).rejects.toMatchObject({ name: 'ApiError', status, message: expect.stringContaining(text) })
@@ -156,6 +160,50 @@ describe('api.js gerçek mod', () => {
     await expect(analyzeGarment(new File(['x'], 'a.jpg'))).rejects.toThrow('ulaşamadım')
     vi.stubGlobal('fetch', vi.fn(async () => Promise.reject(new DOMException('t', 'TimeoutError'))))
     await expect(analyzeGarment(new File(['x'], 'a.jpg'))).rejects.toThrow('uzun süre')
+  })
+
+  it.each([
+    ['boş nesne', {}],
+    ['bilinmeyen kumaş', { ...analysis, fabric: 'jeans' }],
+    ['NaN güven', { ...analysis, confidence: 'NaN' }],
+    ['1 üstü güven', { ...analysis, confidence: 1.5 }],
+    ['top_predictions yok', { ...analysis, top_predictions: [] }],
+    ['bilinmeyen renk', { ...analysis, color_group: 'purple' }],
+  ])('beklenmedik 200 yanıtı (%s) sonuç ekranına gitmez', async (_name, body) => {
+    respond(200, JSON.stringify(body))
+    await expect(analyzeGarment(new File(['x'], 'a.jpg'))).rejects.toMatchObject({ name: 'ApiError', message: expect.stringContaining('ters gitti') })
+  })
+
+  it('AbortSignal.timeout olmayan eski tarayıcıda da istek gider', async () => {
+    vi.stubGlobal('AbortSignal', { timeout: undefined })
+    respond(200, JSON.stringify(analysis))
+    await expect(analyzeGarment(new File(['x'], 'a.jpg'))).resolves.toEqual(analysis)
+    expect(fetch.mock.calls[0][1].signal).toBeDefined() // yedek zamanlayıcının sinyali
+  })
+})
+
+describe('api.js mod seçimi ve demo uyarısı', () => {
+  afterEach(() => vi.unstubAllEnvs())
+
+  it.each([
+    [undefined, false], // değişken unutulursa canlıda sahte sonuç gösterilmez
+    ['false', false],
+    ['', false],
+    ['true', true],
+  ])('VITE_USE_MOCK_API=%s → sahte mod %s', async (value, expected) => {
+    if (value === undefined) vi.stubEnv('VITE_USE_MOCK_API', undefined)
+    else vi.stubEnv('VITE_USE_MOCK_API', value)
+    vi.resetModules()
+    const { USE_MOCK_API } = await import('./api.js')
+    expect(USE_MOCK_API).toBe(expected)
+  })
+
+  it('sahte/modelsiz sonuçlar demo olarak işaretlenir', async () => {
+    const { isDemoResult } = await import('./api.js')
+    expect(isDemoResult({ model_version: 'mock-v1' })).toBe(true)
+    expect(isDemoResult({ model_version: 'fake-v1' })).toBe(true)
+    expect(isDemoResult({ model_version: 'effnet_sqrt_finetuned-v1' })).toBe(false)
+    expect(isDemoResult(null)).toBe(false)
   })
 })
 

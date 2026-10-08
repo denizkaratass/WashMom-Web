@@ -41,6 +41,7 @@ export default function WashPassport({
   userCorrected,
   aiFabric,
   reviewBox,
+  demo = false,
   children,
 }) {
   const hints = getGroupingHints(colorGroup, profile.washing_profile)
@@ -62,6 +63,12 @@ export default function WashPassport({
           <p className="text-sm font-extrabold tracking-wide text-coral-dark uppercase">Wash Passport</p>
           <h1 className="mt-1 text-3xl font-extrabold">{title}</h1>
         </div>
+
+        {demo && (
+          <p role="alert" className="rounded-2xl border-2 border-coral bg-coral-light p-4 text-sm font-bold text-coral-dark">
+            Demo modu: Bu sonuç gerçek yapay zekâ modelinden gelmedi, rastgele üretildi. Kıyafetin için kullanma.
+          </p>
+        )}
 
         {reviewBox}
 
@@ -122,7 +129,11 @@ export default function WashPassport({
                 </ul>
               </div>
             )}
-            <p>Renk grubu, arka planın etkisini azaltmak için fotoğrafın orta bölgesinden hesaplandı.</p>
+            <p>
+              AI güveni, modelin bu tahmine ne kadar emin olduğunu gösterir; doğru olduğunun garantisi değildir.
+              Model kıyafet dışı fotoğraflarda bile bir kumaş seçer.
+            </p>
+            <p>Renk grubu, kıyafet arka plandan ayrıldıktan sonra yalnızca kıyafete ait piksellerden hesaplandı.</p>
             <ul className="list-disc space-y-1 pl-5">
               {profile.tips.map((t) => (
                 <li key={t}>{t}</li>

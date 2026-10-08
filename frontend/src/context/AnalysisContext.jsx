@@ -1,7 +1,7 @@
 // Son analizin durumu: küçültülmüş görsel, API sonucu ve kullanıcının düzeltmesi.
 // Context'te tutulur çünkü /analyze → /result → (giriş modalı) → kaydet boyunca kaybolmamalı.
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { analyzeGarment } from '../services/api.js'
 import { getWashingProfile } from '../rules/washingRules.js'
 
@@ -18,8 +18,13 @@ export function AnalysisProvider({ children }) {
     return () => url && URL.revokeObjectURL(url)
   }, [state.previewUrl])
 
+  // Her analiz bir numara alır. Geç gelen eski bir cevap (ör. kullanıcı başka sayfaya gidip yeni analiz
+  // başlattıysa ya da sıfırladıysa) yeni sonucun üzerine yazılmaz.
+  const latestRequest = useRef(0)
+
   /** Seçilen (küçültülmüş) fotoğrafı analize gönderir. Başarılıysa true döner. */
   const analyze = useCallback(async (file) => {
+    const requestId = ++latestRequest.current
     setState((s) => ({
       ...INITIAL,
       status: 'loading',
@@ -28,9 +33,11 @@ export function AnalysisProvider({ children }) {
     }))
     try {
       const result = await analyzeGarment(file)
+      if (requestId !== latestRequest.current) return false // bu cevap artık eski
       setState((s) => ({ ...s, status: 'success', result }))
       return true
     } catch (error) {
+      if (requestId !== latestRequest.current) return false
       setState((s) => ({ ...s, status: 'error', error }))
       return false
     }
@@ -38,7 +45,10 @@ export function AnalysisProvider({ children }) {
 
   /** correction: { fabric, color_group } — kullanıcının düzeltmesi */
   const setCorrection = useCallback((correction) => setState((s) => ({ ...s, correction })), [])
-  const reset = useCallback(() => setState(INITIAL), [])
+  const reset = useCallback(() => {
+    latestRequest.current++ // sürmekte olan analizin cevabı artık yok sayılır
+    setState(INITIAL)
+  }, [])
 
   const value = useMemo(() => {
     const { result, correction } = state
