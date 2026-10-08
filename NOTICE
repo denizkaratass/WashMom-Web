@@ -14,7 +14,10 @@ Model
 -------------------------------------------------------------------------------
 backend/model/effnet_sqrt_finetuned.keras comes unchanged from the author's
 WashMom Vision project: https://github.com/denizkaratass/WashMom-Vision
-(same CC BY-NC 4.0 license).
+(same CC BY-NC 4.0 license). backend/model/effnet_sqrt_finetuned.onnx is the
+same model with the same weights, converted to the ONNX format with
+backend/tools/convert_to_onnx.py; it is covered by the same license and the
+same dataset restrictions below.
 
 -------------------------------------------------------------------------------
 Third-party dataset notice
@@ -41,6 +44,8 @@ ACM Transactions on Graphics (TOG), 41(4), 2022. doi:10.1145/3528223.3530104
 Pretrained weights and libraries
 -------------------------------------------------------------------------------
 The EfficientNetV2B0 backbone was initialized with ImageNet weights provided
-by Keras / TensorFlow (Apache License 2.0). The backend uses TensorFlow,
-Keras and OpenCV (Apache License 2.0) and FastAPI (MIT). Frontend
-dependencies keep their own licenses (see frontend/package.json).
+by Keras / TensorFlow (Apache License 2.0). The backend uses ONNX Runtime
+(MIT), OpenCV (Apache License 2.0), simplejpeg (MIT) and FastAPI (MIT); the
+one-off conversion tool uses TensorFlow, Keras and tf2onnx (Apache License
+2.0). Frontend dependencies keep their own licenses (see
+frontend/package.json).

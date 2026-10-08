@@ -164,7 +164,7 @@ WashMom Web yeni model eğitmez. Model ayrı proje olan **WashMom Vision / P1**'
 
 | # | Kural | Değer | Backend'de |
 |---|---|---|---|
-| 1 | Model | `effnet_sqrt_finetuned.keras` (EfficientNetV2B0, fine-tuned, sqrt class weight) | `backend/model/` |
+| 1 | Model | `effnet_sqrt_finetuned.keras` (EfficientNetV2B0, fine-tuned, sqrt class weight); sunucu aynı ağırlıkların ONNX halini çalıştırır | `backend/model/*.onnx` |
 | 2 | Sınıflar + sıra | `cotton, denim, chiffon, knitted, leather, furry` (6; **`other` yok**) | `class_names.json` |
 | 3 | Küçültme | uzun kenar 800 px, `INTER_AREA` | `preprocessing.shrink` |
 | 4 | Kıyafeti ayırma | GrabCut, kenardan %5 içeride dikdörtgen, 5 iterasyon | `preprocessing.garment_mask` |
@@ -174,7 +174,7 @@ WashMom Web yeni model eğitmez. Model ayrı proje olan **WashMom Vision / P1**'
 | 8 | Olasılık düzeltme | sqrt sınıf ağırlıkları, τ = 0.3 | `inference.adjust` |
 | 9 | Güven eşiği | `confidence < 0.55` → `needs_review` | `config.NEEDS_REVIEW_MIN_CONFIDENCE` |
 | 10 | Renk | sadece maske pikselleri, medyan S/V | `color_analysis.classify_color` |
-| 11 | Sürümler | TensorFlow 2.20.0, Keras 3.15.1 | `requirements.txt` |
+| 11 | Çalıştırıcı | onnxruntime 1.30.0; JPEG çözücü simplejpeg 1.9.0 `fastdct=True` (= `tf.io.decode_jpeg` varsayılanı, 0 px fark) | `requirements.txt` |
 
 - Doğrulama: `backend/tests/golden/` içindeki 3 fotoğrafın P1 çıktıları (`golden.json`).
   `GoldenTests` backend'in aynı sonucu verdiğini test eder (2026-10-08: fark 0.0000).
@@ -484,7 +484,7 @@ Supabase JS client · Recharts · Vitest (sadece kural testleri için)
 > Not: Tailwind v4 kurulumu eski eğitimlerden farklıdır (`tailwind.config.js` zorunlu değil,
 > tema CSS içinde `@theme` ile tanımlanır). Resmi dokümana göre kur.
 
-**Backend:** Python · FastAPI · Uvicorn · TensorFlow/Keras (P1 ile aynı sürüm, CPU) ·
+**Backend:** Python · FastAPI · Uvicorn · ONNX Runtime (model) · simplejpeg ·
 OpenCV (`opencv-python-headless`) · NumPy · Pillow · Pydantic · python-multipart
 
 Gereksiz UI framework'ü ekleme.
@@ -575,14 +575,16 @@ VITE_SUPABASE_ANON_KEY=...        # anon / publishable key
 **Frontend:** Netlify (veya Vercel). Erken deploy edilir (landing hazır olunca), sonra her fazda güncellenir.
 SPA yenileme 404'ü için `_redirects` dosyası.
 
-**Backend:** Frontend'den ayrı deploy. TensorFlow büyük ve RAM ister; 512 MB RAM'li ücretsiz
-planlarda çökebilir. Önerilen: **Hugging Face Spaces (Docker)**. Alternatif: Render / Railway
-(RAM ve cold start sınırlarına dikkat). Model dosyası gerekiyorsa Git LFS ile taşınır.
+**Backend:** Frontend'den ayrı deploy → **Vercel Hobby (ücretsiz, kart gerekmez)**, Root Directory `backend`,
+`vercel.json` (60 sn, testler/tools/.keras paket dışı), env `ALLOWED_ORIGINS`.
+Neden (2026-10-08): HF Spaces'te CPU (Docker/Gradio) Space'ler ücretli oldu; Render ücretsiz (0,1 CPU) ile tahmin
+5 dk'yı aştı; TensorFlow Vercel'in 500 MB sınırına sığmıyor → model ONNX'e çevrildi (ağırlıklar aynı).
+Linux ölçümü: paket ~360 MB, açılış 4 sn, RAM ~200 MB, 1 CPU'da tahmin 5–10 sn (büyük orijinal fotoğrafla).
 
 **Supabase:** Auth + Database + Storage.
 
 ```
-Kullanıcı → Netlify (React) ──→ FastAPI (HF Spaces): EfficientNet + OpenCV
+Kullanıcı → Netlify (React) ──→ FastAPI (Vercel): EfficientNet (ONNX) + OpenCV
                            └──→ Supabase: Auth + Postgres + Storage
 ```
 
@@ -663,7 +665,7 @@ Her ekranda **boş**, **yükleniyor** ve **hata** durumları o özellik yapılı
 29b. Frontend eşikleri/mock API modele uyarlandı; LICENSE, NOTICE, footer atfı, gizlilik notu
 
 ### Faz 7 — Canlıya çıkış
-30. Backend deploy (HF Spaces / Docker)
+30. Backend deploy (Vercel, ONNX)
 31. Canlı ortam değişkenleri, CORS, Supabase redirect URL'leri
 32. Uçtan uca test (misafir analiz → giriş → kaydet → düzenle → karşılaştır → sil)
 
@@ -693,20 +695,24 @@ Her ekranda **boş**, **yükleniyor** ve **hata** durumları o özellik yapılı
 
 > Bu bölümü her faz sonunda güncelle.
 
-- Aktif faz: **Faz 7 — Canlıya çıkış** (Faz 1–6 tamam; GitHub / HF Spaces / Netlify kullanıcı onayı bekliyor)
+- Aktif faz: **Faz 7 — Canlıya çıkış** (GitHub tamam; Vercel backend + Netlify frontend kullanıcının hesabıyla)
 - 2026-10-08: **Gerçek model bağlandı** (dal `feature/real-model`). P1 modeli `effnet_sqrt_finetuned.keras` sabit;
   backend P1 pipeline'ını birebir uygular (Bölüm 6 tablosu). 3 altın fotoğrafta P1 ile fark 0.0000, HTTP üzerinden
   ve 1024 px frontend küçültmesiyle de aynı sınıf (güven farkı ≤ 0.002). Tahmin ~3–6 sn (GrabCut).
   Eşik 0.55 (fark kuralı ve 'other' tetikleyicisi kalktı). Yeni 422 "kıyafet bulunamadı".
   Testler: backend unittest 33/33 (GoldenTests dahil), Vitest 50/50, lint 0, build OK.
   LICENSE (CC BY-NC 4.0) + NOTICE + footer atfı + analiz sayfasında gizlilik notu eklendi.
-  `frontend/.env` → `VITE_USE_MOCK_API=false`. `backend/README.md` HF Space ayarlarını içerir.
+  `frontend/.env` → `VITE_USE_MOCK_API=false`. `backend/README.md` Vercel adımlarını içerir.
 - 2026-10-08: Yayın öncesi tam kontrol. Bulunan hata: GrabCut OpenCV RNG durumunu taşıdığı için sonuç istek
   sırasına bağlıydı → `prepare()` içinde `cv2.setRNGSeed(0)` (P1'in taze süreç durumu); golden.json her foto için
   ayrı P1 süreciyle yeniden üretildi (kiyafet3: knitted 0.8493). Doğrulananlar: git geçmişinde secret yok;
-  npm audit + pip-audit 0 açık; Docker imajı (HF ile aynı Dockerfile) Linux'ta P1 ile birebir aynı sonuç, ~380 MB RAM,
+  npm audit + pip-audit 0 açık; Docker imajı (backend/Dockerfile) Linux'ta P1 ile birebir aynı sonuç, ~380 MB RAM,
   root olmayan kullanıcı; 9 eşzamanlı istekte tutarlı sonuç; Supabase ayakta, anon RLS boş liste döner;
   Playwright E2E 14/14 (masaüstü + iPhone 13: analiz, 422 mesajı, footer atfı, gizlilik notu, taşma yok, konsol hatası yok).
+- 2026-10-08: GitHub'a gönderildi (github.com/denizkaratass/WashMom-Web, public, CI yeşil). HF Spaces ücretli çıkınca
+  backend **ONNX + Vercel**'e taşındı: `tools/convert_to_onnx.py` (Keras↔ONNX 7.8e-7), JPEG çözücü simplejpeg
+  `fastdct=True` (TF ile 0 px), TensorFlow bağımlılığı kalktı. Backend unittest 35/35 (1 skip: TF'li ortamda koşan
+  çözücü testi; orada da geçti). Linux imajı: ~360 MB, açılış 4 sn, RAM ~200 MB, altın sonuçlar aynı.
 - 2026-10-08: Teslim temizliği: Login/Register sarmalayıcıları kaldırıldı (route doğrudan AuthPage), kullanılmayan
   needs_review_by_rule alanı silindi, WashPassport "Özel bakım bakım" metin hatası düzeltildi, netlify.toml eklendi,
   README'ye ekran görüntüleri (docs/screenshots, mock mod) ve özellik listesi eklendi. Vitest 18/18.
@@ -714,7 +720,7 @@ Her ekranda **boş**, **yükleniyor** ve **hata** durumları o özellik yapılı
   Vitest 19/19, backend `/health` + sahte `/predict` + 400/413 hataları + CORS curl ile test edildi.
 - Supabase projesi kuruldu (ref: mzfliaafsvdgxotwpwrt, Frankfurt), schema.sql çalıştırıldı, "Confirm email" kapalı.
   Uçtan uca test 15/15 geçti: storage upload/signed URL/silme, CRUD, updated_at trigger, CHECK, iki hesapla RLS izolasyonu.
-- Kullanıcıya bağlı: Netlify / HF Spaces (6, 30–31). GitHub push kullanıcı isteğiyle ertelendi.
+- Kullanıcıya bağlı: Vercel (backend) ve Netlify (frontend) hesapları (6, 30–31).
 - 2026-10-08: Güvenlik/QA incelemesi: backend bağımlılıkları yamalı sürümlere yükseltildi (fastapi 0.142.4,
   starlette 1.7.0, python-multipart 0.0.32, pillow 12.3.0, python-dotenv 1.2.4); decompression bomb / dev görsel /
   sahte format / büyük gövde korumaları; model sınıf sayısı + etiket kontrolü; Modal sürükle-kapan hatası; WCAG AA
@@ -728,7 +734,8 @@ Her ekranda **boş**, **yükleniyor** ve **hata** durumları o özellik yapılı
     washingRules.js'inde kalır (P1 rule engine ile aynı mantık, daha zengin arayüz). Repo lisansı CC BY-NC 4.0.
   - 2026-09-29: Kural motorları (washingRules, compatibilityRules) frontend'de. Backend sadece AI çıktısı döner.
   - 2026-09-29: Giriş, analiz sonucunu kaybetmemek için modal ile yapılır.
-  - 2026-09-29: Backend deploy hedefi Hugging Face Spaces (Docker).
+  - 2026-10-08: Backend deploy hedefi **Vercel Hobby (ONNX)**. Kullanıcı ücretli seçenek istemedi; HF CPU Space'leri
+    ücretli, Render ücretsiz çok yavaş. (Eski karar 2026-09-29: HF Spaces Docker — geçersiz.)
   - 2026-09-29: GitHub repo ve push projenin sonuna bırakıldı; commit'ler yerelde birikiyor.
     (Adım 6'daki Netlify deploy'u için GitHub yerine sürükle-bırak veya erteleme kararı o adımda verilecek.)
 - Açık kararlar / notlar: —

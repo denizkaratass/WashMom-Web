@@ -31,7 +31,7 @@ Tek bir kıyafet fotoğrafından **kumaş yapısını** (AI), **renk grubunu** (
 ## Mimari
 
 ```
-Kullanıcı → React (Netlify) ──→ FastAPI (HF Spaces): EfficientNetV2B0 + OpenCV
+Kullanıcı → React (Netlify) ──→ FastAPI (Vercel): EfficientNetV2B0 (ONNX) + OpenCV
                             └──→ Supabase: Auth + Postgres (RLS) + Storage
 ```
 
@@ -45,7 +45,7 @@ Kural motorları frontend'dedir. Bu sayede kullanıcı tahmini düzelttiğinde p
 
 ## AI modeli
 
-Kumaş modeli ayrı proje olan [WashMom Vision](https://github.com/denizkaratass/WashMom-Vision)'da eğitildi ve buraya **değiştirilmeden** alındı (`backend/model/effnet_sqrt_finetuned.keras`).
+Kumaş modeli ayrı proje olan [WashMom Vision](https://github.com/denizkaratass/WashMom-Vision)'da eğitildi ve buraya **değiştirilmeden** alındı (`backend/model/effnet_sqrt_finetuned.keras`). Sunucu aynı ağırlıkları **ONNX** formatında çalıştırır (`effnet_sqrt_finetuned.onnx`). Bu sayede TensorFlow gerekmez ve backend ücretsiz sunucuya sığar; Keras ile fark 7,8e-7.
 
 - EfficientNetV2B0 (fine-tuned), 6 sınıf: cotton, denim, chiffon, knitted, leather, furry.
 - Test setinde Accuracy 0,831, Macro F1 0,730.
@@ -111,7 +111,7 @@ Frontend'i bu backend'e bağlamak için `frontend/.env` içinde `VITE_USE_MOCK_A
 
 **Frontend (Netlify):** Repo kökündeki `netlify.toml` ayarları hazırdır (base `frontend`, build `npm run build`, publish `dist`). Ortam değişkenleri Netlify panelinden girilir. `public/_redirects` sayfa yenilemede 404 alınmasını önler.
 
-**Backend (Hugging Face Spaces, Docker):** `backend/` içeriğini bir Docker Space'e yükle (`Dockerfile` hazır, port 7860; Space ayarları `backend/README.md` başlığında). Model dosyası 38 MB olduğu için Space reposunda Git LFS/Xet gerekir (`git lfs track "*.keras"`). Space ayarlarından `ALLOWED_ORIGINS` değişkenine Netlify adresini ekle. Frontend'de `VITE_API_URL` değerini Space adresi yap.
+**Backend (Vercel, ücretsiz Hobby planı, kart gerekmez):** Vercel'de aynı repodan yeni bir proje aç, **Root Directory** = `backend` seç (`main.py` içindeki FastAPI `app` otomatik bulunur). Ortam değişkeni olarak `ALLOWED_ORIGINS` = Netlify adresi gir. Frontend'de `VITE_API_URL` değerini Vercel adresi yap. Ayrıntılar: [`backend/README.md`](backend/README.md). (Başka bir sunucu için `backend/Dockerfile` da hazır.)
 
 **Supabase:** Authentication → URL Configuration → Site URL ve Redirect URL'lere canlı Netlify adresini ekle.
 
