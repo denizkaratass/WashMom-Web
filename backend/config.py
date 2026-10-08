@@ -26,7 +26,8 @@ MAX_IMAGE_PIXELS = 25_000_000
 
 # ---- Model (P1 / WashMom Vision) ----
 # Model SABİTTİR. Aşağıdaki değerler P1'deki kiyafet_dene.py ile birebir aynı olmalı; elle değiştirme.
-MODEL_PATH = BASE_DIR / "model" / "effnet_sqrt_finetuned.keras"
+KERAS_MODEL_PATH = BASE_DIR / "model" / "effnet_sqrt_finetuned.keras"  # P1'den gelen asıl dosya (kaynak)
+MODEL_PATH = BASE_DIR / "model" / "effnet_sqrt_finetuned.onnx"  # aynı ağırlıklar, ONNX formatı (tools/convert_to_onnx.py)
 CLASS_NAMES_PATH = BASE_DIR / "model" / "class_names.json"  # eğitim sırası: cotton, denim, chiffon, knitted, leather, furry
 MODEL_VERSION = os.getenv("MODEL_VERSION", "effnet_sqrt_finetuned-v1")
 IMAGE_SIZE = (224, 224)  # modele giden crop

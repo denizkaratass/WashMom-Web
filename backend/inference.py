@@ -1,6 +1,6 @@
 """Model yükleme + tahmin.
 
-- model/ klasöründe P1 dosyaları varsa → gerçek model (effnet_sqrt_finetuned, TensorFlow) + τ düzeltmesi.
+- model/ klasöründe P1 dosyaları varsa → gerçek model (effnet_sqrt_finetuned.onnx, onnxruntime) + τ düzeltmesi.
 - Yoksa → SAHTE tahmin. Böylece testler ve frontend–backend iletişimi modelden bağımsız çalışır.
 """
 
@@ -57,23 +57,25 @@ class ModelService:
         if self.class_names != FALLBACK_CLASSES:
             raise RuntimeError(f"class_names.json model sırasıyla uyuşmuyor: {self.class_names} ≠ {FALLBACK_CLASSES}")
 
-        import keras  # TensorFlow büyük; sadece gerçek model varken yüklenir
+        import onnxruntime  # sadece gerçek model varken yüklenir
 
-        model = keras.models.load_model(config.MODEL_PATH)
+        # ONNX: P1 modelinin aynı ağırlıklarla dönüştürülmüş hali (tools/convert_to_onnx.py). TensorFlow gerekmez.
+        session = onnxruntime.InferenceSession(str(config.MODEL_PATH), providers=["CPUExecutionProvider"])
         # Sınıf sayısı tutmazsa zip() sessizce keser ve model YANLIŞ etiket verir; baştan dur.
-        output_size = model.output_shape[-1]
+        output_size = session.get_outputs()[0].shape[-1]
         if output_size != len(self.class_names):
             raise RuntimeError(
                 f"Model {output_size} sınıf çıkarıyor ama class_names.json {len(self.class_names)} sınıf içeriyor"
             )
-        self.model = model
+        self.model = session
+        self.input_name = session.get_inputs()[0].name
         self.model_version = config.MODEL_VERSION
         logger.info("Model yüklendi: %s (%d sınıf)", config.MODEL_PATH.name, len(self.class_names))
 
     def predict_probabilities(self, model_input: np.ndarray) -> dict[str, float]:
         """model_input: preprocessing.prepare() çıktısı, (1, 224, 224, 3). τ düzeltmesi uygulanmış olasılıklar döner."""
         if self.is_real:
-            probs = adjust(self.model.predict(model_input, verbose=0))[0]
+            probs = adjust(self.model.run(None, {self.input_name: model_input})[0])[0]
         else:
             probs = self._fake_probabilities(model_input)
         return {label: float(p) for label, p in zip(self.class_names, probs)}

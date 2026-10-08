@@ -8,6 +8,7 @@ import io
 
 import cv2
 import numpy as np
+import simplejpeg
 from PIL import Image, ImageOps, UnidentifiedImageError
 
 from config import ACCEPTED_IMAGE_FORMATS, IMAGE_SIZE, MAX_IMAGE_PIXELS, MAX_SIDE
@@ -88,11 +89,13 @@ def make_crop(img, mask, codes, pad_ratio=0.08, size=224):
 
 
 def jpeg_roundtrip(crop: np.ndarray) -> np.ndarray:
-    """Eğitim crop'ları JPEG olarak saklanmıştı; model aynı sıkıştırma izlerini görsün (P1 ile aynı kodlayıcı/çözücü)."""
-    import tensorflow as tf  # TensorFlow büyük; sadece gerektiğinde yüklenir
+    """Eğitim crop'ları JPEG olarak saklanmıştı; model aynı sıkıştırma izlerini görsün (P1 ile aynı kodlayıcı/çözücü).
 
+    P1 çözücüsü tf.io.decode_jpeg'dir ve varsayılanı hızlı DCT'dir (INTEGER_FAST). simplejpeg fastdct=True ile
+    aynı libjpeg-turbo yolunu kullanır: 0 piksel fark (OpenCV/Pillow ise 21'e kadar farklı). TensorFlow gerekmez.
+    """
     _, buf = cv2.imencode(".jpg", cv2.cvtColor(crop, cv2.COLOR_RGB2BGR))
-    return tf.io.decode_jpeg(buf.tobytes(), channels=3).numpy()
+    return simplejpeg.decode_jpeg(buf.tobytes(), colorspace="RGB", fastdct=True, fastupsample=False)
 
 
 def to_model_input(crop: np.ndarray) -> np.ndarray:

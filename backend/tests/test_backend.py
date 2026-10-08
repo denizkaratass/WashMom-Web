@@ -3,8 +3,10 @@
 Çalıştırma (backend klasöründe):  python -m unittest discover -s tests -v
 """
 
+import importlib.util
 import io
 import json
+import subprocess
 import sys
 import tempfile
 import threading
@@ -178,12 +180,15 @@ class ModelServiceTests(unittest.TestCase):
 
     def _load_with(self, class_names, output_size):
         tmp = Path(tempfile.mkdtemp())
-        (tmp / "m.keras").write_bytes(b"x")
+        (tmp / "m.onnx").write_bytes(b"x")
         (tmp / "c.json").write_text(json.dumps(class_names), encoding="utf-8")
-        fake_model = types.SimpleNamespace(output_shape=(None, output_size))
-        fake_keras = types.SimpleNamespace(models=types.SimpleNamespace(load_model=lambda _p: fake_model))
-        with mock.patch.multiple(config, MODEL_PATH=tmp / "m.keras", CLASS_NAMES_PATH=tmp / "c.json"), \
-                mock.patch.dict(sys.modules, {"keras": fake_keras}):
+        node = lambda shape: types.SimpleNamespace(name="x:0", shape=shape)  # noqa: E731
+        fake_session = types.SimpleNamespace(
+            get_inputs=lambda: [node(["batch", 224, 224, 3])], get_outputs=lambda: [node(["batch", output_size])]
+        )
+        fake_ort = types.SimpleNamespace(InferenceSession=lambda _p, providers: fake_session)
+        with mock.patch.multiple(config, MODEL_PATH=tmp / "m.onnx", CLASS_NAMES_PATH=tmp / "c.json"), \
+                mock.patch.dict(sys.modules, {"onnxruntime": fake_ort}):
             service = ModelService()
             service.load()
             return service
@@ -231,6 +236,30 @@ class GoldenTests(unittest.TestCase):
         prepare(load_image((GOLDEN_DIR / "kiyafet3.jpg").read_bytes()))  # araya başka bir istek
         _, again, _ = prepare(photo)
         self.assertTrue(np.array_equal(first, again))
+
+    def test_server_does_not_need_tensorflow(self):
+        # Sunucu ONNX ile çalışır; TensorFlow ücretsiz sunucunun 500 MB paket sınırını aşar.
+        # Ayrı süreçte: aynı süreçte başka bir test TensorFlow'u yüklemiş olabilir.
+        code = (
+            "import sys, main, preprocessing as p;"
+            f"p.prepare(p.load_image(open(r'{GOLDEN_DIR / 'kiyafet1.jpg'}', 'rb').read()));"
+            "sys.exit('tensorflow' in sys.modules)"
+        )
+        backend = Path(__file__).resolve().parents[1]
+        self.assertEqual(subprocess.run([sys.executable, "-c", code], cwd=backend).returncode, 0)
+
+
+class JpegDecoderTests(unittest.TestCase):
+    @unittest.skipUnless(importlib.util.find_spec("tensorflow"), "tensorflow kurulu değil (sadece dönüşüm ortamında)")
+    def test_simplejpeg_matches_tensorflow(self):
+        import cv2
+        import tensorflow as tf
+
+        from preprocessing import jpeg_roundtrip
+
+        img = np.asarray(load_image((GOLDEN_DIR / "kiyafet3.jpg").read_bytes()).resize((224, 224)))
+        jpeg = cv2.imencode(".jpg", cv2.cvtColor(img, cv2.COLOR_RGB2BGR))[1].tobytes()
+        self.assertTrue(np.array_equal(jpeg_roundtrip(img), tf.io.decode_jpeg(jpeg, channels=3).numpy()))
 
 
 # ---------------------------------------------------------------- HTTP (gerçek uvicorn sunucusu)

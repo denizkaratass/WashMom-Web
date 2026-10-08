@@ -1,0 +1,6 @@
+# Sadece tools/convert_to_onnx.py için (bir kez). Sunucu bunlara ihtiyaç duymaz.
+-r ../requirements.txt
+tensorflow-cpu==2.20.0
+keras==3.15.1
+tf2onnx==1.17.0
+onnx==1.23.2

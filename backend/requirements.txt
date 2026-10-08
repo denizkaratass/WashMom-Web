@@ -7,6 +7,6 @@ pillow==12.3.0
 numpy==2.2.1
 opencv-python-headless==4.10.0.84
 
-# Model (effnet_sqrt_finetuned.keras) bu sürümlerle doğrulandı; değiştirme.
-tensorflow-cpu==2.20.0
-keras==3.15.1
+# Model ONNX olarak çalışır (TensorFlow yok → ücretsiz sunucuya sığar). Sürümler doğrulandı; değiştirme.
+onnxruntime==1.30.0
+simplejpeg==1.9.0          # P1'in JPEG çözücüsüyle (tf.io.decode_jpeg) piksel piksel aynı
