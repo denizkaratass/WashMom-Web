@@ -1,5 +1,5 @@
-// Uyumluluk kural motoru (Bölüm 8.2): garment A + garment B → "Bununla yıkanır mı?"
-// Tablolar CLAUDE.md'deki matrislerin birebir kopyasıdır.
+// Uyumluluk kural motoru: garment A + garment B → "Bununla yıkanır mı?"
+// Tablolar proje tasarım notlarındaki renk/bakım matrislerinin birebir kopyasıdır; tek kaynak artık bu dosyadır.
 
 import { COLOR_LABELS, FABRIC_LABELS, PROFILE_LABELS } from '../constants/labels.js'
 

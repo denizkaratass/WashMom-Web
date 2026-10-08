@@ -35,3 +35,6 @@ project.context.old.md
 
 # Local Netlify folder
 .netlify
+
+# ---------- Kişisel çalışma notları (repoya girmez) ----------
+CLAUDE.md

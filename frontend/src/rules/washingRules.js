@@ -1,4 +1,4 @@
-// Yıkama kural motoru (Bölüm 8.1): fabric + color → yıkama profili + açıklama.
+// Yıkama kural motoru: fabric + color → yıkama profili + açıklama.
 // ML değil; okunabilir tablolar. Frontend'de durur, böylece kullanıcı düzeltme
 // yaptığında profil backend'e gitmeden anında yeniden hesaplanır.
 

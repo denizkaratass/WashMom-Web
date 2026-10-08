@@ -31,7 +31,7 @@ describe('washingRules', () => {
     expect(getWashingProfile({ fabric, color_group: 'dark' }).washing_profile).toBe(profile)
   })
 
-  it('CLAUDE.md örnek etiketleri', () => {
+  it('tasarım notlarındaki örnek etiketler', () => {
     expect(getWashingProfile({ fabric: 'knitted', color_group: 'dark' }).label).toBe('Hassas • Koyu')
     expect(getWashingProfile({ fabric: 'denim', color_group: 'dark' }).label).toBe('Ağır • Koyu')
     expect(getWashingProfile({ fabric: 'cotton', color_group: 'white' }).label).toBe('Normal • Beyaz')

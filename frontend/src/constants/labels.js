@@ -47,7 +47,7 @@ export const PROFILE_BADGE_CLASSES = {
   special_care: 'bg-honey-light text-honey',
 }
 
-// ---- Güven eşikleri (Bölüm 11). Backend'deki config.py ile aynı değerler. ----
+// ---- Güven eşikleri. Backend'deki config.py ile aynı değerler. ----
 // 0.55: P1'de validation ile seçilen eşik (model sabit; elle değiştirme).
 export const NEEDS_REVIEW_MIN_CONFIDENCE = 0.55
 export const CONFIDENCE_HIGH = 0.8
