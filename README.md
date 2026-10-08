@@ -103,7 +103,7 @@ uvicorn main:app --reload --port 8000
 - `http://localhost:8000/health` → `{"status":"ok","model_loaded":true,"model_version":"effnet_sqrt_finetuned-v1"}`
 - `http://localhost:8000/docs` → tarayıcıdan fotoğraf gönderip `/predict` endpoint'ini deneyebilirsin (ör. `tests/golden/kiyafet1.jpg`).
 - Testler: `python -m unittest discover -s tests -v` (ek paket gerekmez; testler kendi sunucusunu açar; `GoldenTests` P1 ile karşılaştırır)
-- Tahmin CPU'da ~3–6 sn sürer (en yavaş adım GrabCut).
+- Tahmin CPU'da birkaç saniye sürer (canlıda Vercel'de 2,5–10 sn; en yavaş adım GrabCut).
 
 Frontend'i bu backend'e bağlamak için `frontend/.env` içinde `VITE_USE_MOCK_API=false` yap ve `npm run dev` komutunu yeniden başlat. Model dosyaları hakkında: [`backend/model/README.md`](backend/model/README.md)
 
@@ -113,7 +113,7 @@ Frontend'i bu backend'e bağlamak için `frontend/.env` içinde `VITE_USE_MOCK_A
 
 **Backend (Vercel, ücretsiz Hobby planı, kart gerekmez):** Vercel'de aynı repodan yeni bir proje aç, **Root Directory** = `backend` seç (`main.py` içindeki FastAPI `app` otomatik bulunur). Ortam değişkeni olarak `ALLOWED_ORIGINS` = Netlify adresi gir. Frontend'de `VITE_API_URL` değerini Vercel adresi yap. Ayrıntılar: [`backend/README.md`](backend/README.md). (Başka bir sunucu için `backend/Dockerfile` da hazır.)
 
-**Supabase:** Authentication → URL Configuration → Site URL ve Redirect URL'lere canlı Netlify adresini ekle.
+**Supabase:** "Confirm email" açıksa Authentication → URL Configuration → Site URL ve Redirect URL'lere canlı Netlify adresini ekle (doğrulama e-postasındaki link oraya gider). Bu projede kapalı olduğu için gerekmiyor.
 
 > ⚠️ Supabase'in ücretsiz planı bir hafta kullanılmayan projeleri **duraklatır**. Duraklatılan projede giriş ve gardırop çalışmaz (analiz çalışmaya devam eder). Dashboard'dan **Restore project** ile tekrar açılır. Teslim ve sunum öncesinde kontrol et.
 
@@ -126,14 +126,20 @@ Frontend'i bu backend'e bağlamak için `frontend/.env` içinde `VITE_USE_MOCK_A
 ```
 frontend/src/
   components/   Navbar, UploadBox, WashPassport, CorrectionPanel, GarmentCard, modallar...
-  pages/        Home, Analyze, Result, Login, Register, Wardrobe, GarmentDetail, Compare, Dashboard, NotFound
+  pages/        Home, Analyze, Result, AuthPage (giriş/kayıt), Wardrobe, GarmentDetail, Compare, Dashboard, NotFound
+  interfaces/   analysis.js, garment.js (veri şekilleri, JSDoc typedef)
   context/      AuthContext (oturum), AnalysisContext (son analiz)
-  services/     api.js (mock/gerçek seçimi), mockApi.js, supabase.js, garmentService.js, storageService.js
+  hooks/        useGarments.js (gardırop listesi)
+  services/     api.js (mock/gerçek seçimi), mockApi.js, statusMessages.js, supabase.js, garmentService.js, storageService.js
   rules/        washingRules.js, compatibilityRules.js, rules.test.js
   constants/    labels.js (Türkçe etiketler, eşikler)
   utils/        resizeImage.js (canvas ile 1024 px'e küçültme)
 backend/
   main.py  inference.py  preprocessing.py  color_analysis.py  schemas.py  config.py
+  model/        effnet_sqrt_finetuned.onnx (sunucu), .keras (kaynak), class_names.json
+  tests/        test_backend.py, golden/ (P1 referans fotoğrafları + sonuçları)
+  tools/        convert_to_onnx.py (bir kez; .keras → .onnx)
+  vercel.json   Vercel ayarları
 supabase/schema.sql
 ```
 
