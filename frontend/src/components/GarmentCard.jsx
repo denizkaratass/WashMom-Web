@@ -1,13 +1,22 @@
+import { useState } from 'react'
 import { Link } from 'react-router'
 import { COLOR_LABELS, FABRIC_LABELS } from '../constants/labels.js'
 import { isUnresolvedReview } from '../rules/compatibilityRules.js'
 import { ColorDot, ProfileBadge } from './Badges.jsx'
 
 export function GarmentImage({ garment, className = '' }) {
-  return garment.imageUrl ? (
-    <img src={garment.imageUrl} alt={garment.name} loading="lazy" className={`bg-cream-dark object-cover ${className}`} />
+  // Signed URL 1 saat geçerli; süresi dolarsa kırık resim yerine yer tutucu göster
+  const [failedUrl, setFailedUrl] = useState(null)
+  return garment.imageUrl && failedUrl !== garment.imageUrl ? (
+    <img
+      src={garment.imageUrl}
+      alt={garment.name}
+      loading="lazy"
+      onError={() => setFailedUrl(garment.imageUrl)}
+      className={`bg-cream-dark object-cover ${className}`}
+    />
   ) : (
-    <div className={`grid place-items-center bg-cream-dark text-4xl ${className}`} aria-label="Görsel yüklenemedi">
+    <div role="img" className={`grid place-items-center bg-cream-dark text-4xl ${className}`} aria-label="Görsel yüklenemedi">
       👕
     </div>
   )

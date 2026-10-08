@@ -59,7 +59,7 @@ export default function WashPassport({
 
       <div className="space-y-5">
         <div>
-          <p className="text-sm font-extrabold tracking-wide text-coral uppercase">Wash Passport</p>
+          <p className="text-sm font-extrabold tracking-wide text-coral-dark uppercase">Wash Passport</p>
           <h1 className="mt-1 text-3xl font-extrabold">{title}</h1>
         </div>
 

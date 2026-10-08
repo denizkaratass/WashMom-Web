@@ -6,6 +6,7 @@ import { useEffect, useId, useRef } from 'react'
  */
 export default function Modal({ open, onClose, title, children, size = 'md' }) {
   const ref = useRef(null)
+  const pressedBackdrop = useRef(false)
   const titleId = useId()
 
   useEffect(() => {
@@ -25,7 +26,13 @@ export default function Modal({ open, onClose, title, children, size = 'md' }) {
         e.preventDefault() // Esc → state üzerinden kapat
         onClose()
       }}
-      onClick={(e) => e.target === ref.current && onClose()} // arka plana tıklayınca kapat
+      // Arka plana tıklayınca kapat. Sadece "click" yetmez: input'ta metin seçip fareyi dışarıda
+      // bırakınca da click dialog'un kendisine düşer ve yazılanlar kaybolur. Basış da arka planda olmalı.
+      onMouseDown={(e) => (pressedBackdrop.current = e.target === ref.current)}
+      onClick={(e) => {
+        if (pressedBackdrop.current && e.target === ref.current) onClose()
+        pressedBackdrop.current = false
+      }}
       className={`m-auto w-[calc(100%-2rem)] ${width} rounded-3xl bg-cream p-0 text-ink shadow-xl`}
     >
       {open && (

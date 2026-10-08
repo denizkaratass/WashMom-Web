@@ -1,0 +1,11 @@
+# Netlify güvenlik başlıkları (tüm sayfalar)
+# - nosniff: tarayıcı dosya türünü tahmin etmesin
+# - frame-ancestors / X-Frame-Options: site başka bir sitede iframe içine gömülemesin (clickjacking)
+# - Referrer-Policy: başka sitelere tam URL gönderilmesin
+# Not: Kamera, <input capture> ile işletim sisteminin kamerasını açar; Permissions-Policy'de kısıtlanmaz.
+/*
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Content-Security-Policy: frame-ancestors 'none'
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: geolocation=(), microphone=(), payment=()

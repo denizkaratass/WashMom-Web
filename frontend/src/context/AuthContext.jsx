@@ -10,6 +10,10 @@ const AUTH_ERROR_MESSAGES = {
 }
 
 function toTurkish(error) {
+  // Sunucuya hiç ulaşılamadı (internet yok / Supabase projesi duraklatılmış)
+  if (error.name === 'AuthRetryableFetchError' || error.message?.includes('Failed to fetch')) {
+    return 'Hesap sunucusuna ulaşamadım. İnternet bağlantını kontrol edip biraz sonra tekrar dener misin?'
+  }
   if (error.message?.includes('Password should be')) return 'Şifre en az 6 karakter olmalı.'
   if (error.message?.includes('rate limit')) return 'Çok fazla deneme yapıldı. Biraz bekleyip tekrar dene.'
   return AUTH_ERROR_MESSAGES[error.message] ?? 'Bir şeyler ters gitti. Lütfen tekrar dene.'
@@ -22,10 +26,12 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     if (!isSupabaseConfigured) return
     // Sayfa açılınca mevcut oturumu oku, sonra değişiklikleri (giriş/çıkış) dinle
-    supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session)
-      setLoading(false)
-    })
+    // Hata olsa bile loading bitmeli; yoksa korumalı sayfalar sonsuza kadar spinner gösterir.
+    supabase.auth
+      .getSession()
+      .then(({ data }) => setSession(data.session))
+      .catch((err) => console.error('Oturum okunamadı:', err))
+      .finally(() => setLoading(false))
     const { data } = supabase.auth.onAuthStateChange((_event, newSession) => setSession(newSession))
     return () => data.subscription.unsubscribe()
   }, [])

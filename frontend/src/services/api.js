@@ -41,7 +41,10 @@ export async function analyzeGarment(file) {
   if (!response.ok) {
     throw new ApiError(response.status, STATUS_MESSAGES[response.status] ?? STATUS_MESSAGES[500])
   }
-  return response.json()
+  // Bozuk yanıtta kullanıcı "Unexpected token..." gibi teknik bir mesaj görmesin
+  return response.json().catch(() => {
+    throw new ApiError(response.status, STATUS_MESSAGES[500])
+  })
 }
 
 /** /analyze açılınca backend'i önceden uyandırır (cold start). Hata olursa sessizce geçer. */

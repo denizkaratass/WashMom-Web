@@ -697,6 +697,11 @@ Her ekranda **boş**, **yükleniyor** ve **hata** durumları o özellik yapılı
   Uçtan uca test 15/15 geçti: storage upload/signed URL/silme, CRUD, updated_at trigger, CHECK, iki hesapla RLS izolasyonu.
 - Kullanıcıya bağlı: P1 model dosyaları (27–29), Netlify / HF Spaces (6, 30–31). GitHub push kullanıcı isteğiyle ertelendi.
 - `color_analysis.py` geçici sürüm; P1 OpenCV modülü gelince değiştirilecek.
+- 2026-10-08: Güvenlik/QA incelemesi: backend bağımlılıkları yamalı sürümlere yükseltildi (fastapi 0.142.4,
+  starlette 1.7.0, python-multipart 0.0.32, pillow 12.3.0, python-dotenv 1.2.4); decompression bomb / dev görsel /
+  sahte format / büyük gövde korumaları; model sınıf sayısı + etiket kontrolü; Modal sürükle-kapan hatası; WCAG AA
+  kontrast; Netlify _headers; GitHub Actions CI. Testler: Vitest 49/49, backend unittest 26/26.
+  ⚠️ Supabase projesi duraklatılmış (DNS çözülmüyor) → dashboard'dan Restore edilmeli; Supabase'li E2E adımları bekliyor.
 - 2026-09-29: Kullanıcı projeyi adım adım onay beklemeden bitirmemi istedi (öğretmen modu yerine).
 - P1 modeli: hazır değil (mock mode ile ilerleniyor)
 - Alınan kararlar:

@@ -32,7 +32,7 @@ export default function CompatibilityResult({ result }) {
           const s = STATUS_ICON[check.status]
           return (
             <li key={check.key} className="flex items-start gap-4 py-4">
-              <span className={`grid size-8 shrink-0 place-items-center rounded-full font-extrabold ${s.className}`} aria-label={s.label}>
+              <span role="img" className={`grid size-8 shrink-0 place-items-center rounded-full font-extrabold ${s.className}`} aria-label={s.label}>
                 {s.icon}
               </span>
               <div>

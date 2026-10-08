@@ -47,7 +47,7 @@ function DistributionChart({ title, data }) {
           <BarChart data={data} margin={{ top: 16, right: 8, left: -24, bottom: 0 }}>
             <CartesianGrid vertical={false} stroke="#e6dccb" strokeDasharray="3 3" />
             <XAxis dataKey="name" tickLine={false} axisLine={{ stroke: '#e6dccb' }} tick={{ fill: '#5f5a54', fontSize: 12 }} />
-            <YAxis allowDecimals={false} tickLine={false} axisLine={false} tick={{ fill: '#8a847c', fontSize: 12 }} />
+            <YAxis allowDecimals={false} tickLine={false} axisLine={false} tick={{ fill: '#6d6862', fontSize: 12 }} />
             <Tooltip content={<ChartTooltip />} cursor={{ fill: '#f3ecdf' }} />
             <Bar dataKey="value" fill="#2f7d5b" radius={[4, 4, 0, 0]} maxBarSize={44} />
           </BarChart>

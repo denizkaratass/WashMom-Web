@@ -33,7 +33,8 @@ export default function Navbar() {
   const authArea = user ? (
     <div className="flex items-center gap-2">
       <span
-        className="grid size-9 place-items-center rounded-full bg-coral text-sm font-extrabold text-white"
+        role="img"
+        className="grid size-9 place-items-center rounded-full bg-coral-dark text-sm font-extrabold text-white"
         title={user.email}
         aria-label={`Giriş yapan: ${user.email}`}
       >

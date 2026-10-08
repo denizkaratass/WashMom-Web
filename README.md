@@ -57,7 +57,7 @@ npm run dev               # http://localhost:5173
 Mock modda analiz sahte bir API ile çalışır: 1.5–2.5 sn gecikme, bazen belirsiz sonuç, bazen hata. Supabase ayarlanmadıysa giriş ve gardırop sayfaları bunu söyleyen bir mesaj gösterir.
 
 ```bash
-npm test         # kural motoru testleri (Vitest)
+npm test         # kural motoru + servis testleri (Vitest)
 npm run build    # canlı için dist/ üretir
 ```
 
@@ -90,6 +90,7 @@ uvicorn main:app --reload --port 8000
 
 - `http://localhost:8000/health` → `{"status":"ok","model_loaded":false,...}`
 - `http://localhost:8000/docs` → tarayıcıdan fotoğraf gönderip `/predict` endpoint'ini deneyebilirsin.
+- Testler: `python -m unittest discover -s tests -v` (ek paket gerekmez; testler kendi sunucusunu açar)
 
 `backend/model/` klasöründe P1 model dosyaları yokken backend **sahte tahmin** döner. Frontend'i bu backend'e bağlamak için `frontend/.env` içinde `VITE_USE_MOCK_API=false` yap ve `npm run dev` komutunu yeniden başlat.
 
@@ -102,6 +103,12 @@ Gerçek modeli eklemek için: [`backend/model/README.md`](backend/model/README.m
 **Backend (Hugging Face Spaces, Docker):** `backend/` içeriğini bir Docker Space'e yükle (`Dockerfile` hazır, port 7860). Space ayarlarından `ALLOWED_ORIGINS` değişkenine Netlify adresini ekle. Frontend'de `VITE_API_URL` değerini Space adresi yap.
 
 **Supabase:** Authentication → URL Configuration → Site URL ve Redirect URL'lere canlı Netlify adresini ekle.
+
+> ⚠️ Supabase'in ücretsiz planı bir hafta kullanılmayan projeleri **duraklatır**. Duraklatılan projede giriş ve gardırop çalışmaz (analiz çalışmaya devam eder). Dashboard'dan **Restore project** ile tekrar açılır. Teslim ve sunum öncesinde kontrol et.
+
+**Güvenlik başlıkları:** `frontend/public/_headers` Netlify'a clickjacking, MIME sniffing ve referrer korumalarını ekler.
+
+**CI:** `.github/workflows/ci.yml` her push'ta frontend lint + test + build ve backend testlerini çalıştırır.
 
 ## Proje yapısı
 
