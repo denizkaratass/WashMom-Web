@@ -53,6 +53,7 @@ Kumaş modeli ayrı proje olan [WashMom Vision](https://github.com/denizkaratass
 - Renk grubu aynı GrabCut maskesindeki kıyafet piksellerinden (HSV) hesaplanır.
 - Güven 0,55'in altındaysa (P1'de validation ile seçilen eşik) WashMom kumaşı kullanıcıya sorar.
 - Fotoğrafta kıyafet bulunamazsa API `422` döner.
+- **Sınırlılık:** Model yalnızca 6 kumaş sınıfıyla eğitildi (closed-set), bu yüzden kıyafet olmayan bir fotoğrafı reddedemez ve en yakın sınıfı tahmin eder. Softmax güveni bu 6 sınıf arasında göreceli olduğundan böyle durumlarda bile yüksek çıkabilir (ör. bir duvar fotoğrafı %93 "pamuklu" olarak tahmin edildi). Lütfen yalnızca kıyafet fotoğrafı yükleyin.
 - Doğrulama: `backend/tests/golden/` içindeki 3 fotoğrafta backend, P1 ile aynı sonucu verir (`GoldenTests`).
 
 ## Hızlı başlangıç (sadece frontend, mock mod)
