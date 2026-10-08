@@ -677,7 +677,7 @@ Her ekranda **boş**, **yükleniyor** ve **hata** durumları o özellik yapılı
 
 ## 24. FİNAL TESLİM LİSTESİ
 
-- [ ] Çalışan React uygulaması (canlı link)
+- [x] Çalışan React uygulaması (canlı link): https://washmom.netlify.app
 - [ ] Responsive tasarım
 - [ ] Fotoğraf upload + AI sonuç ekranı (Wash Passport)
 - [ ] Confidence handling + kullanıcı düzeltmesi
@@ -685,7 +685,7 @@ Her ekranda **boş**, **yükleniyor** ve **hata** durumları o özellik yapılı
 - [ ] Gardırobum + CRUD + Search/Filter + Garment Detail
 - [ ] “Bununla yıkanır mı?”
 - [ ] Dashboard
-- [x] FastAPI bağlantısı (gerçek model) — yerelde; canlı deploy Faz 7
+- [x] FastAPI bağlantısı (gerçek model): https://washmom-api.vercel.app
 - [ ] Supabase (Auth + DB + Storage, RLS açık)
 - [ ] Public GitHub repo, README, en az bir ekran görüntüsü
 
@@ -695,7 +695,13 @@ Her ekranda **boş**, **yükleniyor** ve **hata** durumları o özellik yapılı
 
 > Bu bölümü her faz sonunda güncelle.
 
-- Aktif faz: **Faz 7 — Canlıya çıkış** (GitHub tamam; Vercel backend + Netlify frontend kullanıcının hesabıyla)
+- Aktif faz: **Faz 8 — Teslim** (canlıda: https://washmom.netlify.app + https://washmom-api.vercel.app)
+- 2026-10-08: **Canlıya çıkış tamam.** Backend Vercel CLI ile (proje `washmom-api`, Hobby, Git'e bağlı DEĞİL →
+  backend değişince `cd backend && npx vercel deploy --prod`). Env: `ALLOWED_ORIGINS=https://washmom.netlify.app,http://localhost:5173`.
+  Frontend Netlify CLI ile mevcut `washmom` sitesine (Git'e bağlı DEĞİL → `cd frontend && npm run build && npx netlify-cli deploy --prod --dir dist`;
+  build'de VITE_ değişkenleri shell'den verilmeli, yoksa yerel .env'deki localhost girer). Netlify env'de 4 VITE_ değişkeni kayıtlı.
+  Canlı doğrulama: altın sonuçlar P1 ile aynı, 422, CORS (yabancı origin reddedilir), Playwright E2E canlıda 14/14,
+  SPA yenileme 200, güvenlik başlıkları aktif. Kalan: Supabase Site URL'e Netlify adresi (kullanıcı, dashboard).
 - 2026-10-08: **Gerçek model bağlandı** (dal `feature/real-model`). P1 modeli `effnet_sqrt_finetuned.keras` sabit;
   backend P1 pipeline'ını birebir uygular (Bölüm 6 tablosu). 3 altın fotoğrafta P1 ile fark 0.0000, HTTP üzerinden
   ve 1024 px frontend küçültmesiyle de aynı sınıf (güven farkı ≤ 0.002). Tahmin ~3–6 sn (GrabCut).

@@ -32,3 +32,6 @@ project.context.old.md
 
 # ---------- Vercel CLI ----------
 .vercel/
+
+# Local Netlify folder
+.netlify

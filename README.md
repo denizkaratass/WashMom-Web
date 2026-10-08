@@ -4,7 +4,7 @@
 
 Tek bir kıyafet fotoğrafından **kumaş yapısını** (AI), **renk grubunu** (OpenCV) ve **yıkama profilini** (kural motoru) çıkaran web uygulaması. Analiz edilen kıyafetler **Gardırobum**'a kaydedilir. İki kıyafet seçilerek **“Bununla yıkanır mı?”** sorusu cevaplanır.
 
-**Canlı demo:** _(Netlify linki deploy sonrası buraya eklenecek)_
+**Canlı demo:** https://washmom.netlify.app · **AI API:** https://washmom-api.vercel.app/docs
 
 | Ana sayfa | Analiz | Wash Passport |
 |---|---|---|
