@@ -15,13 +15,13 @@
   },
   "kiyafet2.jpg": {
     "fabric": "denim",
-    "confidence": 0.9925,
+    "confidence": 0.9926,
     "probabilities": {
       "cotton": 0.0061,
-      "denim": 0.9925,
+      "denim": 0.9926,
       "chiffon": 0.0002,
       "knitted": 0.0001,
-      "leather": 0.0011,
+      "leather": 0.001,
       "furry": 0.0
     },
     "color_group": "colored",
@@ -29,14 +29,14 @@
   },
   "kiyafet3.jpg": {
     "fabric": "knitted",
-    "confidence": 0.8559,
+    "confidence": 0.8493,
     "probabilities": {
-      "cotton": 0.0386,
-      "denim": 0.003,
+      "cotton": 0.0372,
+      "denim": 0.0026,
       "chiffon": 0.0011,
-      "knitted": 0.8559,
+      "knitted": 0.8493,
       "leather": 0.0,
-      "furry": 0.1014
+      "furry": 0.1098
     },
     "color_group": "dark",
     "needs_review": false

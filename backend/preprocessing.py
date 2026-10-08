@@ -106,6 +106,9 @@ def prepare(image: Image.Image) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     Maske hem crop hem renk analizi için kullanılır; GrabCut (yavaş adım) sadece bir kez çalışır.
     """
     img = shrink(image)
+    # GrabCut OpenCV'nin RNG'sini kullanır ve durum çağrıdan çağrıya taşınır: aynı fotoğraf, önceki isteklere göre
+    # farklı maske verebilir. P1'de (kiyafet_dene.py) her çalıştırma taze süreçtir; seed 0 o taze durumla aynıdır.
+    cv2.setRNGSeed(0)  # RNG thread'e özeldir; GrabCut ile aynı thread'de, hemen önce çağrılır
     try:
         mask = garment_mask(img)
     except cv2.error as exc:  # ör. çok küçük ya da tek renk görselde GrabCut model kuramaz

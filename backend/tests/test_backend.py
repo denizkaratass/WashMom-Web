@@ -221,7 +221,16 @@ class GoldenTests(unittest.TestCase):
                 self.assertEqual(build_prediction(probs)["fabric"], expected["fabric"])
                 self.assertEqual(classify_color(img, mask), expected["color_group"])
                 for label, p in expected["probabilities"].items():
-                    self.assertAlmostEqual(probs[label], p, delta=0.01)
+                    # golden.json 4 basamağa yuvarlı; 0.002 yuvarlama ve platform JPEG farkı için pay
+                    self.assertAlmostEqual(probs[label], p, delta=0.002)
+
+    def test_result_does_not_depend_on_request_order(self):
+        # GrabCut RNG kullanır; prepare() her seferinde aynı taze durumdan başlamalı
+        photo = load_image((GOLDEN_DIR / "kiyafet1.jpg").read_bytes())
+        _, first, _ = prepare(photo)
+        prepare(load_image((GOLDEN_DIR / "kiyafet3.jpg").read_bytes()))  # araya başka bir istek
+        _, again, _ = prepare(photo)
+        self.assertTrue(np.array_equal(first, again))
 
 
 # ---------------------------------------------------------------- HTTP (gerçek uvicorn sunucusu)
