@@ -44,6 +44,8 @@ class ModelService:
     def load(self) -> None:
         """Uygulama açılırken BİR KEZ çağrılır (main.py → lifespan)."""
         if not (config.MODEL_PATH.exists() and config.CLASS_NAMES_PATH.exists()):
+            if config.REQUIRE_MODEL:
+                raise RuntimeError(f"Model dosyaları bulunamadı ({config.MODEL_PATH}); canlıda sahte tahmin kapalı")
             logger.warning("Model dosyaları bulunamadı → SAHTE tahmin modu (%s)", config.MODEL_PATH)
             return
 
@@ -78,6 +80,9 @@ class ModelService:
             probs = adjust(self.model.run(None, {self.input_name: model_input})[0])[0]
         else:
             probs = self._fake_probabilities(model_input)
+        # NaN/sonsuz olasılık sessizce "%nan güven" olarak kullanıcıya gitmesin → main.py bunu 500'e çevirir
+        if not np.all(np.isfinite(probs)):
+            raise ValueError("Model geçersiz (NaN/sonsuz) olasılık üretti")
         return {label: float(p) for label, p in zip(self.class_names, probs)}
 
     def _fake_probabilities(self, model_input: np.ndarray) -> np.ndarray:

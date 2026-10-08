@@ -209,6 +209,31 @@ class ModelServiceTests(unittest.TestCase):
     def test_matching_files_load(self):
         self.assertTrue(self._load_with(FALLBACK_CLASSES, output_size=6).is_real)
 
+    def test_missing_model_fails_when_required(self):
+        # Canlıda (REQUIRE_MODEL) model yoksa sahte tahmine düşmek yerine açılışta hata
+        with mock.patch.multiple(config, MODEL_PATH=Path("yok.onnx"), REQUIRE_MODEL=True):
+            with self.assertRaises(RuntimeError):
+                ModelService().load()
+        with mock.patch.multiple(config, MODEL_PATH=Path("yok.onnx"), REQUIRE_MODEL=False):
+            service = ModelService()
+            service.load()
+            self.assertFalse(service.is_real)  # yerelde/testte sahte mod serbest
+
+    def test_corrupt_model_file_fails_loudly(self):
+        tmp = Path(tempfile.mkdtemp())
+        (tmp / "m.onnx").write_bytes(b"bu bir model degil")
+        (tmp / "c.json").write_text(json.dumps(FALLBACK_CLASSES), encoding="utf-8")
+        with mock.patch.multiple(config, MODEL_PATH=tmp / "m.onnx", CLASS_NAMES_PATH=tmp / "c.json"):
+            with self.assertRaises(Exception):
+                ModelService().load()
+
+    def test_nan_probabilities_rejected(self):
+        service = ModelService()
+        service.model = types.SimpleNamespace(run=lambda _o, _f: [np.full((1, 6), np.nan, np.float32)])
+        service.input_name = "x:0"
+        with self.assertRaises(ValueError):
+            service.predict_probabilities(np.zeros((1, 224, 224, 3), np.float32))
+
 
 # ---------------------------------------------------------------- altın sonuçlar (gerçek model)
 @unittest.skipUnless(config.MODEL_PATH.exists(), "model dosyası yok")
@@ -359,6 +384,46 @@ class ApiTests(unittest.TestCase):
         self.assertEqual(ok_headers.get("access-control-allow-origin"), config.ALLOWED_ORIGINS[0])
         _, bad_headers, _ = self.request("/health", headers={"Origin": "https://evil.example"})
         self.assertNotIn("access-control-allow-origin", {k.lower() for k in bad_headers})
+
+    def test_rate_limit_per_ip(self):
+        # Ayrı bir IP kullanılır; diğer testlerin sayacını etkilemez
+        origin = config.ALLOWED_ORIGINS[0]
+        headers = {"x-real-ip": "203.0.113.7", "Origin": origin}
+        data = image_bytes(solid((1, 1, 1)), "JPEG")
+        statuses = [self.predict(data, "text/plain", headers)[0] for _ in range(config.RATE_LIMIT_PER_MINUTE)]
+        self.assertTrue(all(s == 400 for s in statuses))  # sınır içinde: normal işlenir
+        status, resp_headers, body = self.predict(data, "text/plain", headers)
+        self.assertEqual(status, 429)
+        self.assertIn("detail", body)
+        self.assertEqual(resp_headers.get("access-control-allow-origin"), origin)  # tarayıcı mesajı görebilmeli
+        other, _, _ = self.predict(data, "text/plain", {"x-real-ip": "203.0.113.8"})
+        self.assertEqual(other, 400)  # başka IP etkilenmez
+
+    def test_unexpected_preprocessing_error_is_json_with_cors(self):
+        origin = config.ALLOWED_ORIGINS[0]
+        with mock.patch("main.prepare", side_effect=RuntimeError("beklenmedik")):
+            status, headers, body = self.predict(
+                image_bytes(garment_on_white((20, 20, 30)), "JPEG"), headers={"Origin": origin, "x-real-ip": "203.0.113.9"}
+            )
+        self.assertEqual(status, 500)
+        self.assertEqual(body["detail"], "Görsel işlenemedi.")
+        self.assertEqual(headers.get("access-control-allow-origin"), origin)
+
+    def test_concurrent_predictions_are_consistent(self):
+        # Aynı fotoğraf aynı anda 4 kez: hepsi aynı sonucu vermeli (GrabCut RNG + paylaşılan model)
+        data = (GOLDEN_DIR / "kiyafet1.jpg").read_bytes()
+        results = [None] * 4
+
+        def worker(i):
+            results[i] = self.predict(data, headers={"x-real-ip": f"198.51.100.{i}"})
+
+        threads = [threading.Thread(target=worker, args=(i,)) for i in range(4)]
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join(120)
+        self.assertTrue(all(r and r[0] == 200 for r in results))
+        self.assertEqual(len({json.dumps(r[2], sort_keys=True) for r in results}), 1)
 
 
 if __name__ == "__main__":

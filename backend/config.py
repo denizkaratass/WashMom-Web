@@ -39,6 +39,12 @@ EFF_TAU = 0.3
 
 # Model dosyası yoksa sahte tahmin döner (modelsiz geliştirme ve testler için)
 FAKE_MODEL_VERSION = "fake-v1"
+# Canlıda (Vercel, VERCEL=1) model yoksa sahte tahmin YERİNE açılışta hata ver: sahte sonuç gerçek gibi görünmesin.
+REQUIRE_MODEL = os.getenv("REQUIRE_MODEL", "1" if os.getenv("VERCEL") else "0") == "1"
+
+# ---- Kötüye kullanım sınırı: aynı IP'den dakikada en fazla bu kadar tahmin (ücretsiz CPU kotası korunur) ----
+# Sunucu örneği (instance) başına bellekte tutulur; birden çok örnek varsa her biri ayrı sayar.
+RATE_LIMIT_PER_MINUTE = int(os.getenv("RATE_LIMIT_PER_MINUTE", "20"))
 
 # ---- Güven eşiği (P1 17. bölüm, validation ile seçildi) — frontend constants/labels.js ile aynı ----
 NEEDS_REVIEW_MIN_CONFIDENCE = 0.55
