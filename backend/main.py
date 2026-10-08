@@ -14,7 +14,7 @@ from fastapi.responses import JSONResponse
 import config
 from color_analysis import classify_color
 from inference import ModelService, build_prediction
-from preprocessing import InvalidImageError, load_image
+from preprocessing import GarmentNotFoundError, InvalidImageError, load_image, prepare
 from schemas import HealthResponse, PredictionResponse
 
 logging.basicConfig(level=logging.INFO)
@@ -73,8 +73,16 @@ def predict(file: UploadFile = File(...)):
         raise HTTPException(status_code=400, detail="Görsel okunamadı.")
 
     try:
-        prediction = build_prediction(model_service.predict_probabilities(image))
-        color_group = classify_color(image)
+        # P1 akışı: 800 px → GrabCut maske (bir kez) → crop → model; aynı maske renk için de kullanılır
+        img, mask, model_input = prepare(image)
+    except GarmentNotFoundError:
+        raise HTTPException(
+            status_code=422, detail="Fotoğrafta kıyafet bulunamadı. Sade bir zeminde, kıyafet ortada olacak şekilde dene."
+        )
+
+    try:
+        prediction = build_prediction(model_service.predict_probabilities(model_input))
+        color_group = classify_color(img, mask)
     except Exception:
         logger.exception("Tahmin sırasında hata")
         raise HTTPException(status_code=500, detail="Model hatası.")
