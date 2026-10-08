@@ -15,7 +15,7 @@ Tek bir kıyafet fotoğrafından **kumaş yapısını** (AI), **renk grubunu** (
   <img src="docs/screenshots/result-mobile.png" alt="Mobil Wash Passport" width="220" />
 </p>
 
-> Ekran görüntüleri mock modda alınmıştır; örnek kıyafet görseli bir çizimdir.
+> Ekran görüntüleri canlı siteden (https://washmom.netlify.app) gerçek modelle alınmıştır; örnek kıyafet kendi fotoğrafımızdır.
 
 ## Özellikler
 
