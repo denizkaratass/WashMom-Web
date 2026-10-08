@@ -1,0 +1,11 @@
+# Vercel CLI ile yüklerken gönderilmeyecekler (sunucu bunlara ihtiyaç duymaz)
+.venv/
+venv/
+__pycache__/
+*.pyc
+.env
+tests/
+tools/
+model/*.keras
+Dockerfile
+.dockerignore

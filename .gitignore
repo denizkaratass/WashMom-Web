@@ -29,3 +29,6 @@ project.context.old.md
 
 # ---------- Ders belgeleri (repoya girmez) ----------
 *Yönergesi*.pdf
+
+# ---------- Vercel CLI ----------
+.vercel/
