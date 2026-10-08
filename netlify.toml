@@ -1,0 +1,6 @@
+# Netlify, GitHub'dan deploy ederken bu ayarları otomatik okur.
+# Sayfa yenileme yönlendirmesi frontend/public/_redirects dosyasında.
+[build]
+  base = "frontend"
+  command = "npm run build"
+  publish = "dist"

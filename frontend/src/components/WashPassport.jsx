@@ -15,7 +15,7 @@ function Row({ label, children }) {
 function HintList({ title, colors, profiles, tone }) {
   const items = [
     colors.length && `${colors.join(', ')} renkler`,
-    profiles.length && `${profiles.join(', ')} bakım isteyenler`,
+    profiles.length && `${profiles.join(', ')} profilli kıyafetler`,
   ].filter(Boolean)
   const style = tone === 'good' ? 'bg-leaf-light text-leaf-dark' : 'bg-coral-light text-coral-dark'
   return (

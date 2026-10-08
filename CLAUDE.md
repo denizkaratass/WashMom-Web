@@ -687,7 +687,10 @@ Her ekranda **boş**, **yükleniyor** ve **hata** durumları o özellik yapılı
 
 > Bu bölümü her faz sonunda güncelle.
 
-- Aktif faz: **Kullanıcı kurulumları bekleniyor** (kod tarafı Faz 1–5 tamam, Faz 6 hazırlığı yapıldı)
+- Aktif faz: **Teslim hazırlığı** (kod tarafı Faz 1–5 tamam, Faz 6 hazırlığı yapıldı)
+- 2026-10-08: Teslim temizliği: Login/Register sarmalayıcıları kaldırıldı (route doğrudan AuthPage), kullanılmayan
+  needs_review_by_rule alanı silindi, WashPassport "Özel bakım bakım" metin hatası düzeltildi, netlify.toml eklendi,
+  README'ye ekran görüntüleri (docs/screenshots, mock mod) ve özellik listesi eklendi. Vitest 18/18.
 - Tamamlanan adımlar: 1–5, 7–14, 16–26 kod olarak tamam. Doğrulanan: `npm run build`, `npm run lint` (0 uyarı),
   Vitest 19/19, backend `/health` + sahte `/predict` + 400/413 hataları + CORS curl ile test edildi.
 - Supabase projesi kuruldu (ref: mzfliaafsvdgxotwpwrt, Frankfurt), schema.sql çalıştırıldı, "Confirm email" kapalı.

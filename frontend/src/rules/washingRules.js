@@ -55,7 +55,7 @@ export function getProfileForFabric(fabric) {
 /**
  * @param {{ fabric: string, color_group: string }} garment
  * @returns {{
- *   washing_profile: string, label: string, needs_review_by_rule: boolean,
+ *   washing_profile: string, label: string,
  *   temperature: string, program: string, explanation: string, tips: string[]
  * }}
  */
@@ -73,7 +73,6 @@ export function getWashingProfile({ fabric, color_group }) {
   return {
     washing_profile: profile,
     label: formatProfileLabel(profile, color_group),
-    needs_review_by_rule: fabric === 'other',
     temperature: details.temperature,
     program: details.program,
     explanation,

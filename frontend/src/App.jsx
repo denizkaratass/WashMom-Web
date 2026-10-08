@@ -8,8 +8,7 @@ import Spinner from './components/Spinner.jsx'
 import Home from './pages/Home.jsx'
 import Analyze from './pages/Analyze.jsx'
 import Result from './pages/Result.jsx'
-import Login from './pages/Login.jsx'
-import Register from './pages/Register.jsx'
+import AuthPage from './pages/AuthPage.jsx'
 import Wardrobe from './pages/Wardrobe.jsx'
 import GarmentDetail from './pages/GarmentDetail.jsx'
 import Compare from './pages/Compare.jsx'
@@ -30,8 +29,8 @@ export default function App() {
               <Route index element={<Home />} />
               <Route path="analyze" element={<Analyze />} />
               <Route path="result" element={<Result />} />
-              <Route path="login" element={<Login />} />
-              <Route path="register" element={<Register />} />
+              <Route path="login" element={<AuthPage mode="login" />} />
+              <Route path="register" element={<AuthPage mode="register" />} />
               <Route path="wardrobe" element={protect(<Wardrobe />)} />
               <Route path="wardrobe/:id" element={protect(<GarmentDetail />)} />
               <Route path="compare" element={protect(<Compare />)} />

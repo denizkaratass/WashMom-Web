@@ -37,11 +37,6 @@ describe('washingRules', () => {
     expect(getWashingProfile({ fabric: 'cotton', color_group: 'white' }).label).toBe('Normal • Beyaz')
   })
 
-  it('other kumaş kural gereği incelenmeli', () => {
-    expect(getWashingProfile({ fabric: 'other', color_group: 'light' }).needs_review_by_rule).toBe(true)
-    expect(getWashingProfile({ fabric: 'cotton', color_group: 'light' }).needs_review_by_rule).toBe(false)
-  })
-
   it('profil etiketi renk olmadan da çalışır', () => {
     expect(formatProfileLabel('special_care')).toBe('Özel bakım')
   })

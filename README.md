@@ -4,6 +4,30 @@
 
 Tek bir kıyafet fotoğrafından **kumaş yapısını** (AI), **renk grubunu** (OpenCV) ve **yıkama profilini** (kural motoru) çıkaran web uygulaması. Analiz edilen kıyafetler **Gardırobum**'a kaydedilir. İki kıyafet seçilerek **“Bununla yıkanır mı?”** sorusu cevaplanır.
 
+**Canlı demo:** _(Netlify linki deploy sonrası buraya eklenecek)_
+
+| Ana sayfa | Analiz | Wash Passport |
+|---|---|---|
+| ![Ana sayfa](docs/screenshots/home-desktop.png) | ![Fotoğraf yükleme](docs/screenshots/analyze.png) | ![Wash Passport](docs/screenshots/result.png) |
+
+<p align="center">
+  <img src="docs/screenshots/home-mobile.png" alt="Mobil ana sayfa" width="220" />
+  <img src="docs/screenshots/result-mobile.png" alt="Mobil Wash Passport" width="220" />
+</p>
+
+> Ekran görüntüleri mock modda alınmıştır; örnek kıyafet görseli bir çizimdir.
+
+## Özellikler
+
+- Fotoğraf yükleme (sürükle-bırak, mobilde kamera), tarayıcıda 1024 px'e küçültme
+- AI kumaş tahmini + güven seviyesi; emin olunamadığında kullanıcıya sorma
+- Kullanıcı düzeltmesi (kumaş ve renk); AI'ın orijinal tahmini ayrıca saklanır
+- Supabase ile e-posta/şifre girişi; giriş, analiz sonucu kaybolmadan modal ile yapılır
+- Gardırobum: kaydet, listele, ara, filtrele, düzenle, sil (fotoğraflar private bucket + signed URL)
+- “Bununla yıkanır mı?”: iki kıyafetin renk / bakım / güven uyumluluğu
+- Dashboard: renk, profil ve kumaş dağılımı (Recharts)
+- Güvenlik: Row Level Security, her kullanıcı sadece kendi kayıtlarını ve fotoğraflarını görür
+
 ## Mimari
 
 ```
@@ -73,7 +97,7 @@ Gerçek modeli eklemek için: [`backend/model/README.md`](backend/model/README.m
 
 ## Deployment
 
-**Frontend (Netlify):** Base directory `frontend`, build command `npm run build`, publish directory `frontend/dist`. Ortam değişkenleri Netlify panelinden girilir. `public/_redirects` sayfa yenilemede 404 alınmasını önler.
+**Frontend (Netlify):** Repo kökündeki `netlify.toml` ayarları hazırdır (base `frontend`, build `npm run build`, publish `dist`). Ortam değişkenleri Netlify panelinden girilir. `public/_redirects` sayfa yenilemede 404 alınmasını önler.
 
 **Backend (Hugging Face Spaces, Docker):** `backend/` içeriğini bir Docker Space'e yükle (`Dockerfile` hazır, port 7860). Space ayarlarından `ALLOWED_ORIGINS` değişkenine Netlify adresini ekle. Frontend'de `VITE_API_URL` değerini Space adresi yap.
 
