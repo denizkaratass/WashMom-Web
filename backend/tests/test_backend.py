@@ -24,8 +24,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import config  # noqa: E402
 from color_analysis import classify_color  # noqa: E402
-from inference import ModelService, build_prediction  # noqa: E402
-from preprocessing import InvalidImageError, load_image, to_model_input  # noqa: E402
+from inference import FALLBACK_CLASSES, ModelService, adjust, build_prediction  # noqa: E402
+from preprocessing import GarmentNotFoundError, InvalidImageError, load_image, prepare, to_model_input  # noqa: E402
+
+GOLDEN_DIR = Path(__file__).resolve().parent / "golden"
 
 
 def image_bytes(img: Image.Image, fmt: str, **kwargs) -> bytes:
@@ -38,6 +40,14 @@ def solid(color, size=(200, 200)) -> Image.Image:
     return Image.new("RGB", size, color)
 
 
+def garment_on_white(color, size=(400, 400)) -> Image.Image:
+    """Beyaz zemin + ortada tek renk 'kıyafet' (GrabCut'ın ayırabileceği basit sahne)."""
+    img = solid((250, 250, 250), size)
+    w, h = size
+    img.paste(solid(color, (w // 2, h // 2)), (w // 4, h // 4))
+    return img
+
+
 # ---------------------------------------------------------------- build_prediction
 class BuildPredictionTests(unittest.TestCase):
     def test_confident_prediction(self):
@@ -47,17 +57,26 @@ class BuildPredictionTests(unittest.TestCase):
         self.assertEqual([t["label"] for t in p["top_predictions"]], ["knitted", "cotton", "chiffon"])
 
     def test_low_confidence_needs_review(self):
-        self.assertTrue(build_prediction({"denim": 0.59, "cotton": 0.10, "other": 0.31})["needs_review"])
+        self.assertTrue(build_prediction({"denim": 0.54, "cotton": 0.30, "knitted": 0.16})["needs_review"])
 
     def test_confidence_threshold_is_inclusive(self):
-        # en yüksek olasılık tam 0.60 → inceleme GEREKMEZ (kural "< 0.60")
-        self.assertFalse(build_prediction({"denim": 0.60, "other": 0.25, "cotton": 0.15})["needs_review"])
+        # en yüksek olasılık tam 0.55 → inceleme GEREKMEZ (P1 kuralı "< 0.55")
+        self.assertFalse(build_prediction({"denim": 0.55, "cotton": 0.30, "knitted": 0.15})["needs_review"])
 
-    def test_small_margin_needs_review(self):
-        self.assertTrue(build_prediction({"denim": 0.62, "cotton": 0.50})["needs_review"])
+    def test_only_confidence_matters(self):
+        # P1'de fark (margin) kuralı yok: 0.56'ya 0.44 bile otomatik karardır
+        self.assertFalse(build_prediction({"denim": 0.56, "cotton": 0.44})["needs_review"])
 
-    def test_other_always_needs_review(self):
-        self.assertTrue(build_prediction({"other": 0.95, "cotton": 0.05})["needs_review"])
+
+# ---------------------------------------------------------------- adjust (τ düzeltmesi)
+class AdjustTests(unittest.TestCase):
+    def test_sums_to_one_and_shrinks_rare_classes(self):
+        uniform = np.full((1, 6), 1 / 6)
+        adj = adjust(uniform)[0]
+        self.assertAlmostEqual(float(adj.sum()), 1.0, places=6)
+        # az örnekli furry'nin eğitim ağırlığı en yüksekti → payı en çok azalır; cotton'unki en çok artar
+        self.assertEqual(FALLBACK_CLASSES[int(adj.argmin())], "furry")
+        self.assertEqual(FALLBACK_CLASSES[int(adj.argmax())], "cotton")
 
 
 # ---------------------------------------------------------------- load_image
@@ -104,24 +123,46 @@ class LoadImageTests(unittest.TestCase):
         self.assertEqual(load_image(data).size, (20, 40))
 
     def test_model_input_shape_and_range(self):
-        arr = to_model_input(solid((255, 0, 128), (500, 300)))
+        arr = to_model_input(np.full((*config.IMAGE_SIZE, 3), 255, np.uint8))
         self.assertEqual(arr.shape, (1, *config.IMAGE_SIZE, 3))
         self.assertEqual(arr.dtype, np.float32)
         self.assertEqual(arr.max(), 255.0)  # 0–255, normalizasyon modelin içinde
 
 
-# ---------------------------------------------------------------- color
-class ColorTests(unittest.TestCase):
-    def test_groups(self):
-        self.assertEqual(classify_color(solid((250, 250, 250))), "white")
-        self.assertEqual(classify_color(solid((20, 20, 30))), "dark")
-        self.assertEqual(classify_color(solid((200, 30, 40))), "colored")
-        self.assertEqual(classify_color(solid((205, 195, 175))), "light")
+# ---------------------------------------------------------------- prepare (GrabCut → crop)
+class PrepareTests(unittest.TestCase):
+    def test_garment_scene(self):
+        img, mask, x = prepare(garment_on_white((20, 20, 30), (1200, 900)))
+        self.assertEqual(max(img.shape[:2]), config.MAX_SIDE)  # uzun kenar 800'e indi
+        self.assertEqual(mask.shape, img.shape[:2])
+        self.assertEqual((x.shape, x.dtype), ((1, *config.IMAGE_SIZE, 3), np.float32))
 
-    def test_uses_center_not_background(self):
-        img = solid((250, 250, 250), (400, 400))  # beyaz arka plan
-        img.paste(solid((20, 20, 30), (200, 200)), (100, 100))  # ortada koyu kıyafet
-        self.assertEqual(classify_color(img), "dark")
+    def test_small_image_not_upscaled(self):
+        img, _, _ = prepare(garment_on_white((20, 20, 30), (300, 200)))
+        self.assertEqual(img.shape[:2], (200, 300))
+
+    def test_blank_image_has_no_garment(self):
+        with self.assertRaises(GarmentNotFoundError):
+            prepare(solid((240, 240, 240), (400, 400)))
+
+
+# ---------------------------------------------------------------- color (P1 color_group)
+class ColorTests(unittest.TestCase):
+    def color_of(self, rgb):
+        img = np.asarray(solid(rgb, (20, 20)))
+        return classify_color(img, np.ones(img.shape[:2], np.uint8))
+
+    def test_groups(self):
+        self.assertEqual(self.color_of((250, 250, 250)), "white")
+        self.assertEqual(self.color_of((20, 20, 30)), "dark")
+        self.assertEqual(self.color_of((200, 30, 40)), "colored")
+        self.assertEqual(self.color_of((205, 195, 175)), "light")
+
+    def test_only_mask_pixels_count(self):
+        img = np.asarray(garment_on_white((20, 20, 30)))  # beyaz arka plan, ortada koyu kıyafet
+        mask = np.zeros(img.shape[:2], np.uint8)
+        mask[100:300, 100:300] = 1
+        self.assertEqual(classify_color(img, mask), "dark")
 
 
 # ---------------------------------------------------------------- ModelService
@@ -129,8 +170,10 @@ class ModelServiceTests(unittest.TestCase):
     def test_fake_mode_is_deterministic_and_valid(self):
         service = ModelService()
         self.assertFalse(service.is_real)
-        a = service.predict_probabilities(solid((1, 2, 3)))
-        self.assertEqual(a, service.predict_probabilities(solid((1, 2, 3))))
+        x = to_model_input(np.full((*config.IMAGE_SIZE, 3), 7, np.uint8))
+        a = service.predict_probabilities(x)
+        self.assertEqual(a, service.predict_probabilities(x))
+        self.assertEqual(list(a), FALLBACK_CLASSES)
         self.assertAlmostEqual(sum(a.values()), 1.0, places=5)
 
     def _load_with(self, class_names, output_size):
@@ -153,8 +196,32 @@ class ModelServiceTests(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             self._load_with(["cotton", "jeans"], output_size=2)
 
+    def test_wrong_class_order_fails_fast(self):
+        swapped = ["denim", "cotton", *FALLBACK_CLASSES[2:]]
+        with self.assertRaises(RuntimeError):
+            self._load_with(swapped, output_size=6)
+
     def test_matching_files_load(self):
-        self.assertTrue(self._load_with(["cotton", "denim"], output_size=2).is_real)
+        self.assertTrue(self._load_with(FALLBACK_CLASSES, output_size=6).is_real)
+
+
+# ---------------------------------------------------------------- altın sonuçlar (gerçek model)
+@unittest.skipUnless(config.MODEL_PATH.exists(), "model dosyası yok")
+class GoldenTests(unittest.TestCase):
+    """Backend, P1'in (kiyafet_dene.py) aynı fotoğraflara verdiği cevabı birebir vermeli."""
+
+    def test_matches_p1(self):
+        service = ModelService()
+        service.load()
+        golden = json.loads((GOLDEN_DIR / "golden.json").read_text(encoding="utf-8"))
+        for name, expected in golden.items():
+            with self.subTest(photo=name):
+                img, mask, x = prepare(load_image((GOLDEN_DIR / name).read_bytes()))
+                probs = service.predict_probabilities(x)
+                self.assertEqual(build_prediction(probs)["fabric"], expected["fabric"])
+                self.assertEqual(classify_color(img, mask), expected["color_group"])
+                for label, p in expected["probabilities"].items():
+                    self.assertAlmostEqual(probs[label], p, delta=0.01)
 
 
 # ---------------------------------------------------------------- HTTP (gerçek uvicorn sunucusu)
@@ -206,13 +273,18 @@ class ApiTests(unittest.TestCase):
         self.assertEqual(body["status"], "ok")
 
     def test_predict_contract(self):
-        status, _, body = self.predict(image_bytes(solid((20, 20, 30)), "JPEG"))
+        status, _, body = self.predict(image_bytes(garment_on_white((20, 20, 30)), "JPEG"))
         self.assertEqual(status, 200)
         self.assertEqual(
             set(body), {"fabric", "confidence", "top_predictions", "color_group", "needs_review", "model_version"}
         )
         self.assertEqual(body["color_group"], "dark")
         self.assertEqual(len(body["top_predictions"]), config.TOP_K)
+
+    def test_no_garment_is_422(self):
+        status, _, body = self.predict(image_bytes(solid((240, 240, 240)), "JPEG"))
+        self.assertEqual(status, 422)
+        self.assertIn("kıyafet bulunamadı", body["detail"])
 
     def test_errors_use_detail_json(self):
         cases = [
