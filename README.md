@@ -43,6 +43,18 @@ Kullanıcı → React (Netlify) ──→ FastAPI (HF Spaces): EfficientNetV2B0 
 
 Kural motorları frontend'dedir. Bu sayede kullanıcı tahmini düzelttiğinde profil anında yeniden hesaplanır. Aynı kurallar mock modda da çalışır.
 
+## AI modeli
+
+Kumaş modeli ayrı proje olan [WashMom Vision](https://github.com/denizkaratass/WashMom-Vision)'da eğitildi ve buraya **değiştirilmeden** alındı (`backend/model/effnet_sqrt_finetuned.keras`).
+
+- EfficientNetV2B0 (fine-tuned), 6 sınıf: cotton, denim, chiffon, knitted, leather, furry.
+- Test setinde Accuracy 0,831, Macro F1 0,730.
+- Backend, P1'in pipeline'ını birebir uygular: 800 px → GrabCut ile kıyafeti ayırma → beyaz zeminli 224×224 crop → model → τ = 0.3 olasılık düzeltmesi.
+- Renk grubu aynı GrabCut maskesindeki kıyafet piksellerinden (HSV) hesaplanır.
+- Güven 0,55'in altındaysa (P1'de validation ile seçilen eşik) WashMom kumaşı kullanıcıya sorar.
+- Fotoğrafta kıyafet bulunamazsa API `422` döner.
+- Doğrulama: `backend/tests/golden/` içindeki 3 fotoğrafta backend, P1 ile aynı sonucu verir (`GoldenTests`).
+
 ## Hızlı başlangıç (sadece frontend, mock mod)
 
 Gereken: Node.js 20+
@@ -88,19 +100,18 @@ pip install -r requirements.txt
 uvicorn main:app --reload --port 8000
 ```
 
-- `http://localhost:8000/health` → `{"status":"ok","model_loaded":false,...}`
-- `http://localhost:8000/docs` → tarayıcıdan fotoğraf gönderip `/predict` endpoint'ini deneyebilirsin.
-- Testler: `python -m unittest discover -s tests -v` (ek paket gerekmez; testler kendi sunucusunu açar)
+- `http://localhost:8000/health` → `{"status":"ok","model_loaded":true,"model_version":"effnet_sqrt_finetuned-v1"}`
+- `http://localhost:8000/docs` → tarayıcıdan fotoğraf gönderip `/predict` endpoint'ini deneyebilirsin (ör. `tests/golden/kiyafet1.jpg`).
+- Testler: `python -m unittest discover -s tests -v` (ek paket gerekmez; testler kendi sunucusunu açar; `GoldenTests` P1 ile karşılaştırır)
+- Tahmin CPU'da ~3–6 sn sürer (en yavaş adım GrabCut).
 
-`backend/model/` klasöründe P1 model dosyaları yokken backend **sahte tahmin** döner. Frontend'i bu backend'e bağlamak için `frontend/.env` içinde `VITE_USE_MOCK_API=false` yap ve `npm run dev` komutunu yeniden başlat.
-
-Gerçek modeli eklemek için: [`backend/model/README.md`](backend/model/README.md)
+Frontend'i bu backend'e bağlamak için `frontend/.env` içinde `VITE_USE_MOCK_API=false` yap ve `npm run dev` komutunu yeniden başlat. Model dosyaları hakkında: [`backend/model/README.md`](backend/model/README.md)
 
 ## Deployment
 
 **Frontend (Netlify):** Repo kökündeki `netlify.toml` ayarları hazırdır (base `frontend`, build `npm run build`, publish `dist`). Ortam değişkenleri Netlify panelinden girilir. `public/_redirects` sayfa yenilemede 404 alınmasını önler.
 
-**Backend (Hugging Face Spaces, Docker):** `backend/` içeriğini bir Docker Space'e yükle (`Dockerfile` hazır, port 7860). Space ayarlarından `ALLOWED_ORIGINS` değişkenine Netlify adresini ekle. Frontend'de `VITE_API_URL` değerini Space adresi yap.
+**Backend (Hugging Face Spaces, Docker):** `backend/` içeriğini bir Docker Space'e yükle (`Dockerfile` hazır, port 7860; Space ayarları `backend/README.md` başlığında). Model dosyası 38 MB olduğu için Space reposunda Git LFS/Xet gerekir (`git lfs track "*.keras"`). Space ayarlarından `ALLOWED_ORIGINS` değişkenine Netlify adresini ekle. Frontend'de `VITE_API_URL` değerini Space adresi yap.
 
 **Supabase:** Authentication → URL Configuration → Site URL ve Redirect URL'lere canlı Netlify adresini ekle.
 
@@ -125,6 +136,10 @@ backend/
   main.py  inference.py  preprocessing.py  color_analysis.py  schemas.py  config.py
 supabase/schema.sql
 ```
+
+## Lisans
+
+[CC BY-NC 4.0](LICENSE): ticari olmayan amaçlarla atıf vererek kullanılabilir. Kumaş modeli DeepFashion-MultiModal veri setiyle eğitildiği için uygulama **ticari olarak kullanılamaz** (reklam, ödeme, ücretli hizmet yok). Telif, model ve veri seti notu: [NOTICE](NOTICE).
 
 ---
 

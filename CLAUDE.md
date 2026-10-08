@@ -157,36 +157,39 @@ Backend ilk istekte yavaş uyanabilir (ücretsiz hosting “cold start”).
 
 ## 6. AI MODELİ (P1 İLE BAĞLANTI)
 
-WashMom Web yeni model eğitmez. Model ayrı proje olan **WashMom Vision / P1**'de eğitilir.
+WashMom Web yeni model eğitmez. Model ayrı proje olan **WashMom Vision / P1**'de eğitildi
+(https://github.com/denizkaratass/WashMom-Vision). **Model SABİTTİR, asla değişmeyecek; web modele uyar.**
 
-### P1'den alınacak dosyalar (sözleşme)
+### Modelin sözleşmesi (kaynak: P1 `kiyafet_dene.py`; backend bunu birebir uygular)
 
-| Dosya | İçerik |
-|---|---|
-| `best_efficientnetv2b0.keras` | Eğitilmiş model |
-| `class_names.json` | Sınıfların **eğitimdeki sırası** (ör. `["chiffon","cotton","denim",...]`) |
-| `preprocessing.md` (veya not) | Girdi boyutu (ör. 224×224), RGB, piksel aralığı |
-| TensorFlow / Keras sürümü | Backend'de **aynı sürüm** kullanılacak |
+| # | Kural | Değer | Backend'de |
+|---|---|---|---|
+| 1 | Model | `effnet_sqrt_finetuned.keras` (EfficientNetV2B0, fine-tuned, sqrt class weight) | `backend/model/` |
+| 2 | Sınıflar + sıra | `cotton, denim, chiffon, knitted, leather, furry` (6; **`other` yok**) | `class_names.json` |
+| 3 | Küçültme | uzun kenar 800 px, `INTER_AREA` | `preprocessing.shrink` |
+| 4 | Kıyafeti ayırma | GrabCut, kenardan %5 içeride dikdörtgen, 5 iterasyon | `preprocessing.garment_mask` |
+| 5 | Crop | maske dışı beyaz, %8 pay, beyaz kare, 224×224 | `preprocessing.make_crop` |
+| 6 | JPEG turu | crop JPEG'e kodlanıp `tf.io.decode_jpeg` ile açılır | `preprocessing.jpeg_roundtrip` |
+| 7 | Girdi | `(1,224,224,3)` float32, RGB, 0–255 | `preprocessing.to_model_input` |
+| 8 | Olasılık düzeltme | sqrt sınıf ağırlıkları, τ = 0.3 | `inference.adjust` |
+| 9 | Güven eşiği | `confidence < 0.55` → `needs_review` | `config.NEEDS_REVIEW_MIN_CONFIDENCE` |
+| 10 | Renk | sadece maske pikselleri, medyan S/V | `color_analysis.classify_color` |
+| 11 | Sürümler | TensorFlow 2.20.0, Keras 3.15.1 | `requirements.txt` |
 
-Önemli notlar:
-
-- Sınıf sırası yanlış olursa model “çalışır ama yanlış etiket verir”. Sırayı asla elle tahmin etme.
-- Keras'ın `EfficientNetV2B0` modeli normalizasyonu kendi içinde yapar; girdiyi genelde
-  **0–255 aralığında** bekler. P1'de nasıl eğitildiyse backend'de de birebir öyle yapılmalı.
-- Fotoğrafın EXIF yönü (telefon fotoğraflarının yan dönmesi) düzeltilmeli.
-- P1'den 3–5 test görseli ve P1'deki çıktıları alınır; backend aynı sonucu verirse entegrasyon doğrudur.
-
-Sınıflar: `denim · cotton · knitted · chiffon · leather · furry · other`
+- Doğrulama: `backend/tests/golden/` içindeki 3 fotoğrafın P1 çıktıları (`golden.json`).
+  `GoldenTests` backend'in aynı sonucu verdiğini test eder (2026-10-08: fark 0.0000).
+- `other` modelden gelmez; sadece kullanıcının "emin değilim" düzeltmesi olarak vardır.
+- Lisans: model DeepFashion-MultiModal ile eğitildi → **ticari kullanım yasak** (NOTICE, CC BY-NC 4.0).
 
 ---
 
 ## 7. RENK ANALİZİ
 
-Yeni model yok; P1'deki OpenCV modülü kullanılır.
+Yeni model yok; P1'deki OpenCV fonksiyonu (`color_group`) birebir kullanılır.
 Çıktı: `white · light · dark · colored`
 
-Risk: Arka plan rengi sonucu bozabilir. Bu yüzden renk, görselin **merkez bölgesinden**
-hesaplanmalı (P1 modülü zaten bunu yapıyorsa aynen kullan). Kullanıcı rengi de düzeltebilir.
+Arka planın etkisi GrabCut maskesiyle önlenir: renk sadece **kıyafete ait piksellerden**
+(medyan HSV doygunluk ve parlaklık) hesaplanır. Kullanıcı rengi de düzeltebilir.
 
 ---
 
@@ -279,7 +282,7 @@ Kıyafet adı modelden gelmez (model “kazak” demez). Kaydetme formunda varsa
 ### `GET /health`
 
 ```json
-{ "status": "ok", "model_loaded": true, "model_version": "effnetv2b0-v1" }
+{ "status": "ok", "model_loaded": true, "model_version": "effnet_sqrt_finetuned-v1" }
 ```
 
 ### `POST /predict`
@@ -299,7 +302,7 @@ Başarılı yanıt:
   ],
   "color_group": "dark",
   "needs_review": false,
-  "model_version": "effnetv2b0-v1"
+  "model_version": "effnet_sqrt_finetuned-v1"
 }
 ```
 
@@ -308,6 +311,7 @@ Başarılı yanıt:
 Hata yanıtları (FastAPI standardı `{"detail": "..."}`):
 - `400` geçersiz / okunamayan görsel
 - `413` dosya çok büyük
+- `422` fotoğrafta kıyafet bulunamadı (GrabCut maskesi boş)
 - `500` model hatası
 
 Frontend bu hataları WashMom diline çevirir.
@@ -323,14 +327,12 @@ Frontend bu hataları WashMom diline çevirir.
 
 ## 11. CONFIDENCE / BELİRSİZLİK
 
-`needs_review = true` olur eğer:
-- en yüksek olasılık < **0.60**, veya
-- ilk iki olasılık arasındaki fark < **0.15**, veya
-- fabric = `other`
+`needs_review = true` olur eğer en yüksek olasılık (τ düzeltmesinden sonra) < **0.55**.
 
-(Eşikler P1 doğrulama sonuçlarına göre ayarlanabilir; tek yerde, sabit olarak tanımlanır.)
+Eşik P1'de validation ile seçildi (test: kararların %90,6'sı otomatik, bunların %86,6'sı doğru).
+Model sabit olduğu için eşik de sabittir: `backend/config.py` ve `frontend/src/constants/labels.js` aynı değer.
 
-UI güven etiketi: ≥ 0.80 “Yüksek” · 0.60–0.80 “Orta” · altı “Emin değil”
+UI güven etiketi: ≥ 0.80 “Yüksek” · 0.55–0.80 “Orta” · altı “Emin değil”
 
 `needs_review` ise kesin sonuç verme:
 “WashMom bu kıyafetten tam emin olamadı.” + `top_predictions`'tan ilk 2–3 seçenek + [ Emin değilim ]
@@ -535,8 +537,9 @@ washmom-web/
 │   ├── schemas.py
 │   ├── config.py                     # eşikler, izinli origin'ler, max dosya boyutu
 │   ├── model/
-│   │   ├── best_efficientnetv2b0.keras
+│   │   ├── effnet_sqrt_finetuned.keras   # P1'den, değiştirilmeden
 │   │   └── class_names.json
+│   ├── tests/golden/                 # P1 referans fotoğrafları + çıktıları
 │   ├── requirements.txt              # sürümler sabitlenmiş
 │   ├── Dockerfile
 │   └── .env.example
@@ -544,6 +547,8 @@ washmom-web/
 │   └── schema.sql                    # tablo, trigger, RLS ve storage policy'leri
 ├── docs/screenshots/
 ├── .gitignore
+├── LICENSE                           # CC BY-NC 4.0
+├── NOTICE                            # model + veri seti atfı
 └── README.md
 ```
 
@@ -651,10 +656,11 @@ Her ekranda **boş**, **yükleniyor** ve **hata** durumları o özellik yapılı
 25. `compatibilityRules.js` + testleri
 26. Dashboard (Recharts)
 
-### Faz 6 — Gerçek model
+### Faz 6 — Gerçek model ✅ (2026-10-08)
 27. P1 dosyalarını al (model, `class_names.json`, ön işleme notları, TF sürümü)
 28. `preprocessing.py`, `inference.py`, `color_analysis.py`
 29. P1 test görselleriyle aynı sonucun alındığını doğrula
+29b. Frontend eşikleri/mock API modele uyarlandı; LICENSE, NOTICE, footer atfı, gizlilik notu
 
 ### Faz 7 — Canlıya çıkış
 30. Backend deploy (HF Spaces / Docker)
@@ -677,7 +683,7 @@ Her ekranda **boş**, **yükleniyor** ve **hata** durumları o özellik yapılı
 - [ ] Gardırobum + CRUD + Search/Filter + Garment Detail
 - [ ] “Bununla yıkanır mı?”
 - [ ] Dashboard
-- [ ] FastAPI bağlantısı (gerçek model)
+- [x] FastAPI bağlantısı (gerçek model) — yerelde; canlı deploy Faz 7
 - [ ] Supabase (Auth + DB + Storage, RLS açık)
 - [ ] Public GitHub repo, README, en az bir ekran görüntüsü
 
@@ -687,7 +693,14 @@ Her ekranda **boş**, **yükleniyor** ve **hata** durumları o özellik yapılı
 
 > Bu bölümü her faz sonunda güncelle.
 
-- Aktif faz: **Teslim hazırlığı** (kod tarafı Faz 1–5 tamam, Faz 6 hazırlığı yapıldı)
+- Aktif faz: **Faz 7 — Canlıya çıkış** (Faz 1–6 tamam; GitHub / HF Spaces / Netlify kullanıcı onayı bekliyor)
+- 2026-10-08: **Gerçek model bağlandı** (dal `feature/real-model`). P1 modeli `effnet_sqrt_finetuned.keras` sabit;
+  backend P1 pipeline'ını birebir uygular (Bölüm 6 tablosu). 3 altın fotoğrafta P1 ile fark 0.0000, HTTP üzerinden
+  ve 1024 px frontend küçültmesiyle de aynı sınıf (güven farkı ≤ 0.002). Tahmin ~3–6 sn (GrabCut).
+  Eşik 0.55 (fark kuralı ve 'other' tetikleyicisi kalktı). Yeni 422 "kıyafet bulunamadı".
+  Testler: backend unittest 32/32 (GoldenTests dahil), Vitest 50/50, lint 0, build OK.
+  LICENSE (CC BY-NC 4.0) + NOTICE + footer atfı + analiz sayfasında gizlilik notu eklendi.
+  `frontend/.env` → `VITE_USE_MOCK_API=false`. `backend/README.md` HF Space ayarlarını içerir.
 - 2026-10-08: Teslim temizliği: Login/Register sarmalayıcıları kaldırıldı (route doğrudan AuthPage), kullanılmayan
   needs_review_by_rule alanı silindi, WashPassport "Özel bakım bakım" metin hatası düzeltildi, netlify.toml eklendi,
   README'ye ekran görüntüleri (docs/screenshots, mock mod) ve özellik listesi eklendi. Vitest 18/18.
@@ -695,8 +708,7 @@ Her ekranda **boş**, **yükleniyor** ve **hata** durumları o özellik yapılı
   Vitest 19/19, backend `/health` + sahte `/predict` + 400/413 hataları + CORS curl ile test edildi.
 - Supabase projesi kuruldu (ref: mzfliaafsvdgxotwpwrt, Frankfurt), schema.sql çalıştırıldı, "Confirm email" kapalı.
   Uçtan uca test 15/15 geçti: storage upload/signed URL/silme, CRUD, updated_at trigger, CHECK, iki hesapla RLS izolasyonu.
-- Kullanıcıya bağlı: P1 model dosyaları (27–29), Netlify / HF Spaces (6, 30–31). GitHub push kullanıcı isteğiyle ertelendi.
-- `color_analysis.py` geçici sürüm; P1 OpenCV modülü gelince değiştirilecek.
+- Kullanıcıya bağlı: Netlify / HF Spaces (6, 30–31). GitHub push kullanıcı isteğiyle ertelendi.
 - 2026-10-08: Güvenlik/QA incelemesi: backend bağımlılıkları yamalı sürümlere yükseltildi (fastapi 0.142.4,
   starlette 1.7.0, python-multipart 0.0.32, pillow 12.3.0, python-dotenv 1.2.4); decompression bomb / dev görsel /
   sahte format / büyük gövde korumaları; model sınıf sayısı + etiket kontrolü; Modal sürükle-kapan hatası; WCAG AA
@@ -704,8 +716,10 @@ Her ekranda **boş**, **yükleniyor** ve **hata** durumları o özellik yapılı
   Supabase projesi duraklatılmıştı, kullanıcı Restore etti. E2E (production build + yerel FastAPI + Supabase) 20/20:
   kayıt, kaydet, düzenle, gardırop, compare, dashboard, iki hesapla RLS + doğrudan REST/Storage saldırısı, silme.
 - 2026-09-29: Kullanıcı projeyi adım adım onay beklemeden bitirmemi istedi (öğretmen modu yerine).
-- P1 modeli: hazır değil (mock mode ile ilerleniyor)
+- P1 modeli: bağlandı ve doğrulandı (2026-10-08). Model asla değişmeyecek.
 - Alınan kararlar:
+  - 2026-10-08: Model sabit; web modele uyar. Eşik P1'deki 0.55. Yıkama kuralları web'in kendi
+    washingRules.js'inde kalır (P1 rule engine ile aynı mantık, daha zengin arayüz). Repo lisansı CC BY-NC 4.0.
   - 2026-09-29: Kural motorları (washingRules, compatibilityRules) frontend'de. Backend sadece AI çıktısı döner.
   - 2026-09-29: Giriş, analiz sonucunu kaybetmemek için modal ile yapılır.
   - 2026-09-29: Backend deploy hedefi Hugging Face Spaces (Docker).
