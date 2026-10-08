@@ -1,6 +1,6 @@
 // Servis katmanı testleri. Supabase ve fetch sahte (mock) — ağa çıkılmaz.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { COLOR_GROUPS, FABRICS, getConfidenceLevel, NEEDS_REVIEW_MIN_CONFIDENCE } from '../constants/labels.js'
+import { COLOR_GROUPS, getConfidenceLevel, MODEL_FABRICS, NEEDS_REVIEW_MIN_CONFIDENCE } from '../constants/labels.js'
 import { MAX_FILE_SIZE, validateImageFile } from '../utils/resizeImage.js'
 
 // ---------------------------------------------------------------- sahte Supabase
@@ -138,6 +138,7 @@ describe('api.js gerçek mod', () => {
   it.each([
     [400, 'okuyamadım'],
     [413, 'fazla büyük'],
+    [422, 'kıyafeti seçemedim'],
     [500, 'ters gitti'],
     [503, 'ters gitti'], // bilinmeyen kodlar genel mesaja düşer
   ])('%i → WashMom dilinde mesaj', async (status, text) => {
@@ -174,15 +175,16 @@ describe('mockApi', () => {
       await vi.advanceTimersByTimeAsync(3000)
       const r = await promise
       if (r instanceof Error) {
-        expect(r).toMatchObject({ name: 'ApiError', status: 500 })
+        expect(r.name).toBe('ApiError')
+        expect([422, 500]).toContain(r.status)
         continue
       }
       ok++
       expect(Object.keys(r).sort()).toEqual(['color_group', 'confidence', 'fabric', 'model_version', 'needs_review', 'top_predictions'])
-      expect(FABRICS).toContain(r.fabric)
+      expect(MODEL_FABRICS).toContain(r.fabric) // model 'other' üretmez
       expect(COLOR_GROUPS).toContain(r.color_group)
       expect(r.top_predictions[0]).toEqual({ label: r.fabric, confidence: r.confidence })
-      if (r.confidence < NEEDS_REVIEW_MIN_CONFIDENCE || r.fabric === 'other') expect(r.needs_review).toBe(true)
+      expect(r.needs_review).toBe(r.confidence < NEEDS_REVIEW_MIN_CONFIDENCE)
     }
     expect(ok).toBeGreaterThan(100)
   })
@@ -217,8 +219,8 @@ describe('getConfidenceLevel sınırları', () => {
   it.each([
     [0.8, 'high'],
     [0.7999, 'medium'],
-    [0.6, 'medium'],
-    [0.5999, 'low'],
+    [0.55, 'medium'],
+    [0.5499, 'low'],
     [0, 'low'],
   ])('%f → %s', (c, key) => expect(getConfidenceLevel(c).key).toBe(key))
 })

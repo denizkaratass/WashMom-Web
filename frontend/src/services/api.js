@@ -4,18 +4,13 @@
 
 import { ApiError } from './apiError.js'
 import { mockAnalyzeGarment } from './mockApi.js'
+import { STATUS_MESSAGES } from './statusMessages.js'
 
 export { ApiError }
 
 export const USE_MOCK_API = import.meta.env.VITE_USE_MOCK_API !== 'false'
 const API_URL = (import.meta.env.VITE_API_URL || 'http://localhost:8000').replace(/\/$/, '')
 const REQUEST_TIMEOUT_MS = 90_000 // ücretsiz hosting cold start uzun sürebilir
-
-const STATUS_MESSAGES = {
-  400: 'Bu fotoğrafı okuyamadım. Başka bir fotoğraf dener misin?',
-  413: 'Bu fotoğraf biraz fazla büyük. Daha küçük bir fotoğraf dener misin?',
-  500: 'Bir şeyler ters gitti, WashMom tekrar denemeni istiyor.',
-}
 
 /** @returns {Promise<{fabric, confidence, top_predictions, color_group, needs_review, model_version}>} */
 export async function analyzeGarment(file) {

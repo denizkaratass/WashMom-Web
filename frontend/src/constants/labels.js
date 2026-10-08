@@ -2,6 +2,9 @@
 // Her şey tek yerde durur; bir etiketi değiştirmek için sadece burayı düzenle.
 
 export const FABRICS = ['denim', 'cotton', 'knitted', 'chiffon', 'leather', 'furry', 'other']
+// Modelin (effnet_sqrt_finetuned) tahmin edebildiği 6 sınıf. 'other' modelden gelmez;
+// sadece kullanıcının "emin değilim" düzeltmesi olarak FABRICS içinde durur.
+export const MODEL_FABRICS = ['cotton', 'denim', 'chiffon', 'knitted', 'leather', 'furry']
 export const COLOR_GROUPS = ['white', 'light', 'colored', 'dark']
 export const WASHING_PROFILES = ['delicate', 'normal', 'heavy', 'special_care']
 
@@ -45,10 +48,10 @@ export const PROFILE_BADGE_CLASSES = {
 }
 
 // ---- Güven eşikleri (Bölüm 11). Backend'deki config.py ile aynı değerler. ----
-export const NEEDS_REVIEW_MIN_CONFIDENCE = 0.6
-export const NEEDS_REVIEW_MIN_MARGIN = 0.15
+// 0.55: P1'de validation ile seçilen eşik (model sabit; elle değiştirme).
+export const NEEDS_REVIEW_MIN_CONFIDENCE = 0.55
 export const CONFIDENCE_HIGH = 0.8
-export const CONFIDENCE_MEDIUM = 0.6
+export const CONFIDENCE_MEDIUM = NEEDS_REVIEW_MIN_CONFIDENCE // "Emin değil" rozeti ile needs_review aynı sınırda
 
 export function getConfidenceLevel(confidence) {
   if (confidence >= CONFIDENCE_HIGH) return { key: 'high', label: 'Yüksek' }
