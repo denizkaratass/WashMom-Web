@@ -701,7 +701,8 @@ Her ekranda **boş**, **yükleniyor** ve **hata** durumları o özellik yapılı
   Frontend Netlify CLI ile mevcut `washmom` sitesine (Git'e bağlı DEĞİL → `cd frontend && npm run build && npx netlify-cli deploy --prod --dir dist`;
   build'de VITE_ değişkenleri shell'den verilmeli, yoksa yerel .env'deki localhost girer). Netlify env'de 4 VITE_ değişkeni kayıtlı.
   Canlı doğrulama: altın sonuçlar P1 ile aynı, 422, CORS (yabancı origin reddedilir), Playwright E2E canlıda 14/14,
-  SPA yenileme 200, güvenlik başlıkları aktif. Kalan: Supabase Site URL'e Netlify adresi (kullanıcı, dashboard).
+  SPA yenileme 200, güvenlik başlıkları aktif. Supabase Site URL değiştirilmedi: "Confirm email" kapalı
+  (mailer_autoconfirm=true), e-posta gönderilmiyor → gereksiz. Confirm email açılırsa Site URL = https://washmom.netlify.app yapılmalı.
 - 2026-10-08: **Gerçek model bağlandı** (dal `feature/real-model`). P1 modeli `effnet_sqrt_finetuned.keras` sabit;
   backend P1 pipeline'ını birebir uygular (Bölüm 6 tablosu). 3 altın fotoğrafta P1 ile fark 0.0000, HTTP üzerinden
   ve 1024 px frontend küçültmesiyle de aynı sınıf (güven farkı ≤ 0.002). Tahmin ~3–6 sn (GrabCut).
