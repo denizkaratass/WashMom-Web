@@ -7,5 +7,6 @@ pillow==12.3.0
 numpy==2.2.1
 opencv-python-headless==4.10.0.84
 
-# Gerçek model gelince (Faz 6) yorumu kaldır ve sürümü P1'de kullanılan TensorFlow sürümüyle AYNI yap:
-# tensorflow-cpu==2.xx.x
+# Model (effnet_sqrt_finetuned.keras) bu sürümlerle doğrulandı; değiştirme.
+tensorflow-cpu==2.20.0
+keras==3.15.1

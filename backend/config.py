@@ -25,15 +25,20 @@ ACCEPTED_IMAGE_FORMATS = {"JPEG", "PNG", "WEBP"}  # Pillow'un dosya içeriğinde
 MAX_IMAGE_PIXELS = 25_000_000
 
 # ---- Model (P1 / WashMom Vision) ----
-MODEL_PATH = BASE_DIR / "model" / "best_efficientnetv2b0.keras"
-CLASS_NAMES_PATH = BASE_DIR / "model" / "class_names.json"
-MODEL_VERSION = os.getenv("MODEL_VERSION", "effnetv2b0-v1")
-IMAGE_SIZE = (224, 224)  # P1 preprocessing notuyla doğrulanmalı
+# Model SABİTTİR. Aşağıdaki değerler P1'deki kiyafet_dene.py ile birebir aynı olmalı; elle değiştirme.
+MODEL_PATH = BASE_DIR / "model" / "effnet_sqrt_finetuned.keras"
+CLASS_NAMES_PATH = BASE_DIR / "model" / "class_names.json"  # eğitim sırası: cotton, denim, chiffon, knitted, leather, furry
+MODEL_VERSION = os.getenv("MODEL_VERSION", "effnet_sqrt_finetuned-v1")
+IMAGE_SIZE = (224, 224)  # modele giden crop
+MAX_SIDE = 800  # GrabCut öncesi uzun kenar (büyük görselde GrabCut yavaş)
 
-# Model dosyası yoksa sahte tahmin döner (Faz 3: modelsiz iskelet)
+# Olasılık düzeltme (P1 15.3–15.4): sqrt sınıf ağırlıkları + τ
+TRAIN_COUNTS = [10351, 3402, 1290, 797, 440, 127]  # train setindeki sınıf sayıları, class_names sırasıyla
+EFF_TAU = 0.3
+
+# Model dosyası yoksa sahte tahmin döner (modelsiz geliştirme ve testler için)
 FAKE_MODEL_VERSION = "fake-v1"
 
-# ---- Güven eşikleri (Bölüm 11) — frontend constants/labels.js ile aynı ----
-NEEDS_REVIEW_MIN_CONFIDENCE = 0.60
-NEEDS_REVIEW_MIN_MARGIN = 0.15
+# ---- Güven eşiği (P1 17. bölüm, validation ile seçildi) — frontend constants/labels.js ile aynı ----
+NEEDS_REVIEW_MIN_CONFIDENCE = 0.55
 TOP_K = 3
