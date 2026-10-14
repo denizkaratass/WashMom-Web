@@ -49,12 +49,12 @@ Kumaş modeli ayrı proje olan [WashMom Vision](https://github.com/denizkaratass
 
 - EfficientNetV2B0 (fine-tuned), 6 sınıf: cotton, denim, chiffon, knitted, leather, furry.
 - Test setinde Accuracy 0,831, Macro F1 0,730.
-- Backend, P1'in pipeline'ını birebir uygular: 800 px → GrabCut ile kıyafeti ayırma → beyaz zeminli 224×224 crop → model → τ = 0.3 olasılık düzeltmesi.
+- Backend, WashMom Vision'ın pipeline'ını birebir uygular: 800 px → GrabCut ile kıyafeti ayırma → beyaz zeminli 224×224 crop → model → τ = 0.3 olasılık düzeltmesi.
 - Renk grubu aynı GrabCut maskesindeki kıyafet piksellerinden (HSV) hesaplanır.
-- Güven 0,55'in altındaysa (P1'de validation ile seçilen eşik) WashMom kumaşı kullanıcıya sorar.
+- Güven 0,55'in altındaysa (WashMom Vision'da validation ile seçilen eşik) WashMom kumaşı kullanıcıya sorar.
 - Fotoğrafta kıyafet bulunamazsa API `422` döner.
 - **Sınırlılık:** Model yalnızca 6 kumaş sınıfıyla eğitildi (closed-set), bu yüzden kıyafet olmayan bir fotoğrafı reddedemez ve en yakın sınıfı tahmin eder. Softmax güveni bu 6 sınıf arasında göreceli olduğundan böyle durumlarda bile yüksek çıkabilir (ör. bir duvar fotoğrafı %93 "pamuklu" olarak tahmin edildi). Lütfen yalnızca kıyafet fotoğrafı yükleyin.
-- Doğrulama: `backend/tests/golden/` içindeki 3 fotoğrafta backend, P1 ile aynı sonucu verir (`GoldenTests`).
+- Doğrulama: `backend/tests/golden/` içindeki 3 fotoğrafta backend, WashMom Vision ile aynı sonucu verir (`GoldenTests`).
 
 ## Hızlı başlangıç (sadece frontend, mock mod)
 
@@ -103,7 +103,7 @@ uvicorn main:app --reload --port 8000
 
 - `http://localhost:8000/health` → `{"status":"ok","model_loaded":true,"model_version":"effnet_sqrt_finetuned-v1"}`
 - `http://localhost:8000/docs` → tarayıcıdan fotoğraf gönderip `/predict` endpoint'ini deneyebilirsin (ör. `tests/golden/kiyafet1.jpg`).
-- Testler: `python -m unittest discover -s tests -v` (ek paket gerekmez; testler kendi sunucusunu açar; `GoldenTests` P1 ile karşılaştırır)
+- Testler: `python -m unittest discover -s tests -v` (ek paket gerekmez; testler kendi sunucusunu açar; `GoldenTests` WashMom Vision ile karşılaştırır)
 - Tahmin CPU'da birkaç saniye sürer (canlıda Vercel'de 2,5–10 sn; en yavaş adım GrabCut).
 
 Frontend'i bu backend'e bağlamak için `frontend/.env` içinde `VITE_USE_MOCK_API=false` yap ve `npm run dev` komutunu yeniden başlat. Model dosyaları hakkında: [`backend/model/README.md`](backend/model/README.md)
@@ -138,7 +138,7 @@ frontend/src/
 backend/
   main.py  inference.py  preprocessing.py  color_analysis.py  schemas.py  config.py
   model/        effnet_sqrt_finetuned.onnx (sunucu), .keras (kaynak), class_names.json
-  tests/        test_backend.py, golden/ (P1 referans fotoğrafları + sonuçları)
+  tests/        test_backend.py, golden/ (WashMom Vision referans fotoğrafları + sonuçları)
   tools/        convert_to_onnx.py (bir kez; .keras → .onnx)
   vercel.json   Vercel ayarları
 supabase/schema.sql
