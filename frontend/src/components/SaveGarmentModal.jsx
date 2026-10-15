@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import Modal from './Modal.jsx'
+import { SESSION_MISSING_MESSAGE } from '../services/garmentService.js'
 
 // "Gardırobuma Kaydet" formu: isim (önerilen varsayılanla) + not.
 export default function SaveGarmentModal({ open, defaultName, onClose, onSave }) {
@@ -16,7 +17,12 @@ export default function SaveGarmentModal({ open, defaultName, onClose, onSave })
       await onSave({ name: name.trim(), user_note: note.trim() })
     } catch (err) {
       console.error(err)
-      setError('Kıyafeti kaydedemedim. İnternet bağlantını kontrol edip tekrar dener misin?')
+      // Oturum düştüyse internet bağlantısını suçlama; kullanıcıya ne yapması gerektiğini söyle
+      setError(
+        err?.message === SESSION_MISSING_MESSAGE
+          ? SESSION_MISSING_MESSAGE
+          : 'Kıyafeti kaydedemedim. İnternet bağlantını kontrol edip tekrar dener misin?',
+      )
       setBusy(false)
     }
   }

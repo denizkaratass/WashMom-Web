@@ -1,4 +1,4 @@
-# Hugging Face Spaces (Docker) için. HF Spaces 7860 portunu ve 1000 uid'li kullanıcıyı bekler.
+# Vercel dışında Docker ile çalıştırmak için (canlı backend Vercel'de, bkz. vercel.json). 7860 portu ve 1000 uid'li kullanıcı Docker tabanlı ücretsiz sunucularla (ör. Hugging Face Spaces) uyumludur.
 FROM python:3.12-slim
 
 RUN useradd -m -u 1000 user

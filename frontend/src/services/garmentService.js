@@ -16,9 +16,11 @@ import {
 
 const TABLE = 'garments'
 
+export const SESSION_MISSING_MESSAGE = 'Oturumun sona ermiş. Lütfen tekrar giriş yapıp yeniden dener misin?'
+
 async function requireUserId() {
   const { data, error } = await supabase.auth.getUser()
-  if (error || !data.user) throw new Error('Oturum bulunamadı. Lütfen tekrar giriş yap.')
+  if (error || !data.user) throw new Error(SESSION_MISSING_MESSAGE)
   return data.user.id
 }
 

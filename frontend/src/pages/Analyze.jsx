@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router'
 import UploadBox from '../components/UploadBox.jsx'
 import LoadingAnalysis from '../components/LoadingAnalysis.jsx'
@@ -16,15 +16,21 @@ export default function Analyze() {
   const navigate = useNavigate()
   const { analyze, status, error, previewUrl } = useAnalysis()
   const [file, setFile] = useState(null)
+  // Analiz sürerken kullanıcı başka sayfaya geçerse, sonuç gelince onu oradan /result'a sürükleme
+  const mounted = useRef(false)
 
   // Ücretsiz hosting'de backend uyuyor olabilir; sayfa açılınca arka planda uyandır.
   useEffect(() => {
+    mounted.current = true
     wakeBackend()
+    return () => {
+      mounted.current = false
+    }
   }, [])
 
   async function handleSubmit() {
     const ok = await analyze(file)
-    if (ok) navigate('/result')
+    if (ok && mounted.current) navigate('/result')
   }
 
   const loading = status === 'loading'

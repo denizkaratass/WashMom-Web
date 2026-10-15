@@ -58,7 +58,7 @@ Kumaş modeli ayrı proje olan [WashMom Vision](https://github.com/denizkaratass
 
 ## Hızlı başlangıç (sadece frontend, mock mod)
 
-Gereken: Node.js 20+
+Gereken: Node.js 20.19+ ya da 22.12+ (Vite 8)
 
 ```bash
 cd frontend

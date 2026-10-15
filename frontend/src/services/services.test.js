@@ -32,7 +32,9 @@ const fake = vi.hoisted(() => {
 })
 vi.mock('./supabase.js', () => ({ supabase: fake.supabase }))
 
-const { createGarment, deleteGarment, getGarment, listGarments, updateGarment } = await import('./garmentService.js')
+const { createGarment, deleteGarment, getGarment, listGarments, SESSION_MISSING_MESSAGE, updateGarment } = await import(
+  './garmentService.js'
+)
 
 const analysis = {
   fabric: 'knitted',
@@ -65,6 +67,12 @@ describe('garmentService', () => {
     await expect(createGarment({ imageFile: new File(['x'], 'a.jpg'), analysis, values })).rejects.toThrow()
     const [uploaded] = fake.bucket.upload.mock.calls[0]
     expect(fake.bucket.remove).toHaveBeenCalledWith([uploaded])
+  })
+
+  it('oturum yoksa ayırt edilebilir oturum mesajı verir, hiçbir şey yüklemez', async () => {
+    fake.supabase.auth.getUser.mockResolvedValueOnce({ data: { user: null }, error: null })
+    await expect(createGarment({ imageFile: new File(['x'], 'a.jpg'), analysis, values })).rejects.toThrow(SESSION_MISSING_MESSAGE)
+    expect(fake.bucket.upload).not.toHaveBeenCalled()
   })
 
   it('görsel yüklenemezse DB kaydı denenmez', async () => {
